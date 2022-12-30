@@ -1,12 +1,91 @@
-
-
-
 var bfCount = `select count(1) as count from aact_trx_actlog_bf where trx_il = trunc(sysdate)`;
+
 var checkCloseBranch = `select b.enm, a.br_no, to_char(a.open_il, 'YYYY/MM/DD') as open_il , a.bon_clsgb, a.CLS_BIT
                         from aact_acc_clsbr a, acom_bix_base b
                         where a.br_no = b.br_no
                         and tr_il = trunc(sysdate)
                         order by a.cls_bit desc`;
+
+var closeAccountHavebalance = {
+  name: "CLOSE ACCOUNT HAVE BALANCE IN TRX_BAL",
+  query: `SELECT A.REF_NO, A.MGNT_BR_NO, A.SUBJ_CD, B.ATIT_CD, C.ENM, SUM(B.BAL_AMT)
+FROM ACOM_CONT_BASE A, AACT_TRX_BAL B, ACOM_COM_ACTCD C
+WHERE A.REF_NO = B.REF_NO
+ AND A.STS = '9'
+ AND C.BR_NO = '0000'
+ AND C.BSPL_GB = 'B'
+ AND B.ATIT_CD = C.AC_CD
+ AND TRUNC(SYSDATE) BETWEEN APCL_STR_DT AND APCL_END_DT
+ AND B.BAL_AMT <> 0
+ AND (ATIT_CD NOT LIKE '815%' AND ATIT_CD NOT LIKE '915%') -- COA WO
+--AND B.ATIT_CD IN ('15422014', '15421014') COA AMORT RESTRU
+GROUP BY A.REF_NO, A.MGNT_BR_NO, A.SUBJ_CD, B.ATIT_CD, C.ENM
+ORDER BY REF_NO`,
+};
+
+var giroPrkCancelCheck = {
+    name : "Giro PRK Cancel Check",
+    query : `      SELECT A.*                                                                                                      
+    , CASE WHEN A.L_BAL_AMT > 0 THEN 'C'                                                                    
+           ELSE 'D'                                                                                         
+            END ADJ_L_DRCR                                                                                  
+    , CASE WHEN A.L_BAL_AMT > 0 THEN 'D'                                                                    
+           ELSE 'C'                                                                                         
+            END ADJ_D_DRCR                                                                                  
+    , CASE WHEN A.L_BAL_AMT > D_BAL_AMT THEN D_BAL_AMT                                                      
+           ELSE L_BAL_AMT                                                                                   
+            END ADJUST_AMT                                                                                  
+    , '0' AS IBF_GB                                                                                         
+ FROM (SELECT REF_NO                                                                                        
+            ,CCY                                                                                            
+            ,BR_NO                                                                                          
+            ,MAX(L_DTLS_BAL_DV_CD) L_DTLS_BAL_DV_CD                                                         
+            ,MAX(D_DTLS_BAL_DV_CD) D_DTLS_BAL_DV_CD                                                         
+            ,MAX(L_ATIT_CD) L_ATIT_CD                                                                       
+            ,MAX(D_ATIT_CD) D_ATIT_CD                                                                       
+            ,SUM(L_BAL_AMT) L_BAL_AMT                                                                       
+            ,SUM(D_BAL_AMT) D_BAL_AMT                                                                       
+         FROM (SELECT REF_NO                                                                                
+                    , CCY                                                                                   
+                    , BR_NO                                                                                 
+                    , CASE WHEN SUBSTR(DTLS_BAL_DV_CD,1,1) = 'L' THEN DTLS_BAL_DV_CD                        
+                           ELSE ''                                                                          
+                            END L_DTLS_BAL_DV_CD                                                            
+                    , CASE WHEN SUBSTR(DTLS_BAL_DV_CD,1,1) = 'D' THEN DTLS_BAL_DV_CD                        
+                           ELSE ''                                                                          
+                            END D_DTLS_BAL_DV_CD                                                            
+                    , CASE WHEN SUBSTR(DTLS_BAL_DV_CD,1,1) = 'L' THEN ATIT_CD                               
+                           ELSE ''                                                                          
+                            END L_ATIT_CD                                                                   
+                    , CASE WHEN SUBSTR(DTLS_BAL_DV_CD,1,1) = 'D' THEN ATIT_CD                               
+                           ELSE ''                                                                          
+                            END D_ATIT_CD                                                                   
+                    , CASE WHEN SUBSTR(DTLS_BAL_DV_CD,1,1) = 'L' THEN BAL_AMT                               
+                           ELSE 0                                                                           
+                            END L_BAL_AMT                                                                   
+                    , CASE WHEN SUBSTR(DTLS_BAL_DV_CD,1,1) = 'D' THEN BAL_AMT                               
+                            ELSE 0                                                                          
+                             END D_BAL_AMT                                                                  
+                 FROM AACT_TRX_BAL                                                                          
+                WHERE REF_NO IN (SELECT REF_NO                                                              
+                                   FROM AACT_TRX_BAL                                                        
+                                  WHERE REF_NO IN (SELECT REF_NO                                            
+                                                     FROM AACT_TRX_BAL                                      
+                                                    WHERE TRUNC(SYSDATE) BETWEEN APCL_STR_DT AND APCL_END_DT       
+                                                      AND ATIT_CD = '21831001'                                 
+                                                      AND BAL_AMT > 0                                          
+                                                  )                                                            
+                                    AND TRUNC(SYSDATE) BETWEEN APCL_STR_DT AND APCL_END_DT         
+                                    AND ATIT_CD = '15422011'                                                   
+                                    AND (BAL_AMT > 0 OR BAL_AMT < 0)                                           
+                                )                                                                              
+                  AND TRUNC(SYSDATE) BETWEEN APCL_STR_DT AND APCL_END_DT                           
+                  AND ATIT_CD IN ('15422011', '21831001')                                                      
+             )                                                                                                 
+        GROUP BY REF_NO,CCY,BR_NO                                                                              
+    ) A                                                                                                        
+ORDER BY REF_NO`,
+}
 
 var expenseVBudget = `SELECT * FROM (
     SELECT T1.BUSI_CD,
@@ -40,7 +119,9 @@ var expenseVBudget = `SELECT * FROM (
      AND DIFF <> 0
     `;
 
-var allocationCollateral = { name : 'Allocation Collateral', query : `
+var allocationCollateral = {
+  name: "Allocation Collateral",
+  query: `
 SELECT  *
 FROM    ACOM_BAT_PROCLST
 WHERE   PROC_BRNO = '0888'
@@ -48,9 +129,12 @@ AND     PROC_DT   = TRUNC(SYSDATE)-1
 AND     JOB_ID    LIKE 'dmb%'
 AND     SEQ_NO    = 0
 AND     PROC_STS  <> 2
-`};
+`,
+};
 
-var checkBatchJob = { name : 'Check Batch Job', query: `SELECT PROC_DT, BAT_PGM_ID, SEQ_NO, STR_DT, STR_TM, END_DT, END_TM, REG_EMP_NO, 
+var checkBatchJob = {
+  name: "Check Batch Job",
+  query: `SELECT PROC_DT, BAT_PGM_ID, SEQ_NO, STR_DT, STR_TM, END_DT, END_TM, REG_EMP_NO, 
 CASE 
 WHEN PROC_STS = '1' THEN 'ON PROCESSING' 
 WHEN PROC_STS = '2' THEN 'SUCCESS' ELSE 'FAILED' END AS STATUS, 
@@ -65,52 +149,15 @@ AND NOT
 OR RTN_MSG LIKE '(CMB_INIT_PASS)%'                           -- WRONG PASS
 OR RTN_MSG LIKE '(2010:0)%'                                  -- TODAY IS HOLIDAY
 OR RTN_MSG LIKE '(cmb_dt_reconcile:%')                       -- PRINTER IS NOT OPEN
-ORDER BY C.PROC_DT, C.STR_TM`
-} 
+ORDER BY C.PROC_DT, C.STR_TM`,
+};
 
-var checkNplAcrualHaveNormalAccrualBalance = `SELECT /*+PARALLEL(XX 16)+*/
-XX.*
- FROM (SELECT Z.REF_NO,
-              X.BIZ_GB,
-              Z.BAL_AMT AS TRX_BAL,
-              X.ACR_TOT,
-              Z.BAL_AMT - X.ACR_TOT AS DIFF
-         FROM (SELECT REF_NO, SUM(BAL_AMT) AS BAL_AMT
-                 FROM AACT_TRX_BAL A
-                WHERE A.REF_NO IN (SELECT REF_NO
-                                     FROM AACT_ACR_BASE XX
-                                    WHERE XX.ACR_KD = '3'
-                                      AND XX.ACR_GB <> 'N'
-                                      AND XX.SEQ_NO = 0
-                                      AND STS = '0'
-                                      )
-                  AND TRUNC(SYSDATE) BETWEEN APCL_STR_DT AND A.APCL_END_DT 
-                 AND A.ATIT_CD IN ('19101001','19101002','19101004') --COA LOAN 19101001, COA FB 19101002 19101004
-                  AND DTLS_BAL_DV_CD = 'F309'
-                                   --AND A.REF_NO = 'DFB0888221000002'
-                                    GROUP BY REF_NO) Z,
-              (SELECT /*+ index(B AACT_ACR_BAL_PK) */B.REF_NO, SUM(B.ACR_TOT) AS ACR_TOT, C.BIZ_GB
-                 FROM AACT_ACR_BAL B, AACT_ACR_BASE C
-                WHERE B.REF_NO = C.REF_NO
-                  AND B.REF_NO IN (SELECT REF_NO
-                                     FROM AACT_ACR_BASE XX
-                                    WHERE XX.ACR_KD = '3'
-                                      AND XX.ACR_GB <> 'N'
-                                      AND XX.SEQ_NO = 0
-                                      AND STS = '0')
-                  AND C.BIZ_SEQ = B.BIZ_SEQ
-                  AND C.BIZ_SUBSEQ = B.BIZ_SUBSEQ
-                  AND C.AC_CD = B.AC_CD
-                  AND C.SEQ_NO = 0
-                  AND C.STS = '0'
-                  AND C.ACR_KD = '3'
-                  AND C.ACR_GB <> 'N'
-                  AND C.REMARK NOT LIKE '%MIG%'
-                GROUP BY B.REF_NO, C.BIZ_GB) X
-        WHERE Z.REF_NO = X.REF_NO) XX
-WHERE XX.DIFF <> 0`
-
-
-
-
-module.exports = {bfCount, checkCloseBranch, expenseVBudget, allocationCollateral, checkBatchJob, checkNplAcrualHaveNormalAccrualBalance }
+module.exports = {
+  bfCount,
+  checkCloseBranch,
+  expenseVBudget,
+  allocationCollateral,
+  checkBatchJob,
+  closeAccountHavebalance,
+  giroPrkCancelCheck
+};

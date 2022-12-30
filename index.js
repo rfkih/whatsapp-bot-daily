@@ -24,14 +24,12 @@ client.on('message', message => {
 
 
  
-    const type = content.substring(0,5)
+    const type = content.substring(0,5).toLowerCase()
     const number = content.substring(5,6)
 
 
-    if(type === "check"){
-        test(message, type, number);
-    }else if (type === "daily") {
-        test(message, type, number);
+    if(type === "check" || "daily"){
+        test(message, type, number)
     }
        
        
