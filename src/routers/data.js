@@ -661,7 +661,7 @@ var checkCloseBranch = `select b.enm, a.br_no, to_char(a.open_il, 'YYYY/MM/DD') 
 
                           if (type === "check") {
                             return [bfCount, checkCloseBranch, checkDwi]
-                          }else if (type === "daily") {
+                          }else if (type === "daily" || type === "all") {
                             return [ afterCloseBranch,
                                   allocationCollateral,
                                   checkBatchJobMonday,
@@ -680,7 +680,8 @@ var checkCloseBranch = `select b.enm, a.br_no, to_char(a.open_il, 'YYYY/MM/DD') 
                                   loanBaseNSwithLoanSch,
                                   loanBatchPaymentProcess,
                                   otBatchCheck,
-                                  wrongAmort,]
+                                  wrongAmort
+                                  ]
                           }
    
  

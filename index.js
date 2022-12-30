@@ -1,8 +1,7 @@
 const qrcode = require("qrcode-terminal");
 const { Client, LocalAuth, MessageMedia } = require("whatsapp-web.js");
 
-const { date } = require("./src/routers/data")
-const { test } = require("./src/routers");
+const { test, testAll } = require("./src/routers");
 
 const client = new Client({
   authStrategy: new LocalAuth(),
@@ -23,13 +22,19 @@ client.on("message", (message) => {
   const number = parseInt(content.substring(5, 7)) - 1;
   const changeDate = content.substring(7, 9);
 
-  console.log(type, number, changeDate)
+  console.log(type, number, changeDate);
 
   if (type === "check" || type === "daily") {
-
     // date(changeDate)
-    test(message, type, number, changeDate);
-
+    if (number == "-1") {
+      return;
+    } else {
+      test(message, type, number, changeDate);
+    }
+    
+  } else if (type === "all") {
+    
+    testAll(message, type, changeDate);
 
   } else if (type === "list") {
     message.reply(`
@@ -37,6 +42,7 @@ Command List :
 Check Branch / BF_Count : Format "check(number)"
 1. BF_Count
 2. Open/Close Branch
+3. Check Dwi
 
 Daily Schedule: Format "daily(number)"
 1. After Close Branch

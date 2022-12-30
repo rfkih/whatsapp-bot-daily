@@ -5,10 +5,7 @@ oracledb.outFormat = oracledb.OUT_FORMAT_OBJECT;
 const { Client, LocalAuth, MessageMedia } = require("whatsapp-web.js");
 const Table = require("easy-table");
 
-const {date} = require("./data")
-
-
-
+const { date } = require("./data");
 
 const libPath = "C:\\oracle\\instantclient_21_8";
 const dbConfig = require("../config/dbconfig");
@@ -18,26 +15,22 @@ if (libPath && fs.existsSync(libPath)) {
 }
 
 const test = async (message, type, number, changeDate) => {
- 
-
-//   date(changeDate)
-
- 
+  //   date(changeDate)
 
   const dailyStmnts = date(changeDate, type);
-  
-  const checkStmnts =  date(changeDate, type);
+
+  const checkStmnts = date(changeDate, type);
   console.log(type);
   console.log(number);
   const connection = await oracledb.getConnection(dbConfig);
-  
+
   try {
     if (type === "check") {
-      console.log(checkStmnts[0]);
+      console.log(checkStmnts[parseInt(number)]);
       const result = await connection.execute(checkStmnts[parseInt(number)]);
       //console.log(connection._inProgress);
       connection.release();
-      //console.log(connection._inProgress);
+      console.log(result.rows);
       const response = result.rows.map((val) => {
         if (number == "0") {
           return;
@@ -78,14 +71,6 @@ const test = async (message, type, number, changeDate) => {
         message.reply(waSend);
       }
     } else if (type === "daily") {
-      const d = false;
-      //    console.log(connection._inProgress);
-      const start = Date.now();
-
-      let isLoading = true;
-
-      let qwerty = true;
-
       let time = 0;
 
       let result;
@@ -104,12 +89,11 @@ const test = async (message, type, number, changeDate) => {
           dailyStmnts[parseInt(number)]?.name
         } process will be updated every 30 seconds. please wait`
       );
-      //  qwerty = false
+
+      console.log(dailyStmnts[parseInt(number)]?.query);
       result = await connection.execute(dailyStmnts[parseInt(number)]?.query);
 
       clearInterval(interval);
-
-      console.log(dailyStmnts[parseInt(number)]?.query);
 
       connection.release();
       console.log("Done");
@@ -135,4 +119,69 @@ const test = async (message, type, number, changeDate) => {
   }
 };
 
-module.exports = { test };
+const testAll = async (message, type, changeDate) => {
+  const dailyStmnts = date(changeDate, type);
+
+  const res = [];
+
+  
+
+  try {
+    if (type === "all") {
+      let time = 0;
+
+      let result;
+
+      var interval = setInterval(() => {
+        time += 30;
+        message.reply(`check in progress. Time elapsed ${time} seconds`);
+
+        if (time == 120) {
+          message.reply("sabar ya");
+        }
+      }, 10000);
+
+      let i = 0;
+
+      while (i < 3) {
+          console.log(`Done ${i}`);
+          const connection = await oracledb.getConnection(dbConfig);
+
+        result = await connection.execute(dailyStmnts[i]?.query);
+
+        connection.release();
+
+        //   console.log(connection);
+        const response = result.rows;
+
+        const waSend = Table.print(response);
+
+        const rows = `Data pada ${
+          dailyStmnts[i].name
+        } ini sejumlah ${result.rows.length} row`;
+
+        console.log(Table.print(response));
+
+        if (result.rows.length != 0) {
+          res.push(rows);
+          res.push(waSend);
+        }
+
+        i++;
+      }
+
+      clearInterval(interval);
+
+      res.map((val)=> {
+        message.reply(val)
+      })
+    }
+  } catch (error) {
+    console.log(error);
+    message.reply("wrong command");
+    clearInterval(interval);
+    connection.release();
+  }
+};
+
+module.exports = { test, testAll };
