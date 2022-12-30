@@ -23,12 +23,15 @@ client.on('message', message => {
     const content = message.body
 
 
-    console.log(message.body)
+ 
+    const type = content.substring(0,5)
+    const number = content.substring(5,6)
 
-    if(content.toLowerCase() === "tes123"){
-        test(message, content);
-    }else if (content.toLowerCase() === "tes1234") {
-        test(message, content);
+
+    if(type === "check"){
+        test(message, type, number);
+    }else if (type === "daily") {
+        test(message, type, number);
     }
        
        

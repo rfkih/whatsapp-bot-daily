@@ -40,7 +40,7 @@ var expenseVBudget = `SELECT * FROM (
      AND DIFF <> 0
     `;
 
-var allocationCollateral = `
+var allocationCollateral = { name : 'Allocation Collateral', query : `
 SELECT  *
 FROM    ACOM_BAT_PROCLST
 WHERE   PROC_BRNO = '0888'
@@ -48,9 +48,9 @@ AND     PROC_DT   = TRUNC(SYSDATE)-1
 AND     JOB_ID    LIKE 'dmb%'
 AND     SEQ_NO    = 0
 AND     PROC_STS  <> 2
-`;
+`};
 
-var checkBatchJob = `SELECT PROC_DT, BAT_PGM_ID, SEQ_NO, STR_DT, STR_TM, END_DT, END_TM, REG_EMP_NO, 
+var checkBatchJob = { name : 'Check Batch Job', query: `SELECT PROC_DT, BAT_PGM_ID, SEQ_NO, STR_DT, STR_TM, END_DT, END_TM, REG_EMP_NO, 
 CASE 
 WHEN PROC_STS = '1' THEN 'ON PROCESSING' 
 WHEN PROC_STS = '2' THEN 'SUCCESS' ELSE 'FAILED' END AS STATUS, 
@@ -66,6 +66,7 @@ OR RTN_MSG LIKE '(CMB_INIT_PASS)%'                           -- WRONG PASS
 OR RTN_MSG LIKE '(2010:0)%'                                  -- TODAY IS HOLIDAY
 OR RTN_MSG LIKE '(cmb_dt_reconcile:%')                       -- PRINTER IS NOT OPEN
 ORDER BY C.PROC_DT, C.STR_TM`
+} 
 
 var checkNplAcrualHaveNormalAccrualBalance = `SELECT /*+PARALLEL(XX 16)+*/
 XX.*
