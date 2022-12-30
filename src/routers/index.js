@@ -9,6 +9,7 @@ const {date} = require("./data")
 
 
 
+
 const libPath = "C:\\oracle\\instantclient_21_8";
 const dbConfig = require("../config/dbconfig");
 
@@ -19,56 +20,13 @@ if (libPath && fs.existsSync(libPath)) {
 const test = async (message, type, number, changeDate) => {
  
 
-  date(changeDate)
+//   date(changeDate)
 
-  const {
-    bfCount,
-    checkDwi,
-    checkCloseBranch,
-    afterCloseBranch,
-    allocationCollateral,
-    checkBatchJobMonday,
-    checkBatchJobTuesdayFriday,
-    checkBatchJobFirstDay,
-    accrualHaveNormalAccrualBal,
-    accrualHaveNplAcrrualBal,
-    nplAcrualAndNormalAccrualBal,
-    nplHaveNormalAccrualOrNonNplHaveNplAccrual,
-    transactionBackdate,
-    closeAccountHavebalance,
-    giroPrkCancelCheck,
-    GlBalanceCheck,
-    GlBalanceVsTrxBal,
-    liabiltyMinusCheck,
-    loanBaseNSwithLoanSch,
-    loanBatchPaymentProcess,
-    otBatchCheck,
-    wrongAmort,
-  } = require("./data");
+ 
 
-  const dailyStmnts = [
-    afterCloseBranch,
-    allocationCollateral,
-    checkBatchJobMonday,
-    checkBatchJobTuesdayFriday,
-    checkBatchJobFirstDay,
-    accrualHaveNormalAccrualBal,
-    accrualHaveNplAcrrualBal,
-    nplAcrualAndNormalAccrualBal,
-    nplHaveNormalAccrualOrNonNplHaveNplAccrual,
-    transactionBackdate,
-    closeAccountHavebalance,
-    giroPrkCancelCheck,
-    GlBalanceCheck,
-    GlBalanceVsTrxBal,
-    liabiltyMinusCheck,
-    loanBaseNSwithLoanSch,
-    loanBatchPaymentProcess,
-    otBatchCheck,
-    wrongAmort,
-  ];
+  const dailyStmnts = date(changeDate, type);
   
-  const checkStmnts = [bfCount, checkCloseBranch, checkDwi];
+  const checkStmnts =  date(changeDate, type);
   console.log(type);
   console.log(number);
   const connection = await oracledb.getConnection(dbConfig);
@@ -151,7 +109,7 @@ const test = async (message, type, number, changeDate) => {
 
       clearInterval(interval);
 
-      console.log("ini abis await");
+      console.log(dailyStmnts[parseInt(number)]?.query);
 
       connection.release();
       console.log("Done");
