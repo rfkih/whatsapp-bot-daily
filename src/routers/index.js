@@ -136,13 +136,10 @@ const testAll = async (message, type, changeDate) => {
      
 
       var interval = setInterval(() => {
-        time += 30;
+        time += 120;
         message.reply(`check in progress. Time elapsed ${time} seconds`);
 
-        if (time == 120) {
-          message.reply("sabar ya");
-        }
-      }, 30000);
+      }, 120000);
 
       let i = 0;
       
