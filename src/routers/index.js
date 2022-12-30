@@ -120,17 +120,20 @@ const test = async (message, type, number, changeDate) => {
 };
 
 const testAll = async (message, type, changeDate) => {
-  const dailyStmnts = date(changeDate, type);
+    
+    const res = [];
+    
 
-  const res = [];
+    const dailyStmnts = date(changeDate, type);
 
-  
-
+    console.log(dailyStmnts.length,'length dailystments')
   try {
-    if (type === "all") {
+  
       let time = 0;
 
       let result;
+      const connection = await oracledb.getConnection(dbConfig);
+     
 
       var interval = setInterval(() => {
         time += 30;
@@ -139,17 +142,19 @@ const testAll = async (message, type, changeDate) => {
         if (time == 120) {
           message.reply("sabar ya");
         }
-      }, 10000);
+      }, 30000);
 
       let i = 0;
+      
+      while (i < dailyStmnts.length) {
+       
+       console.log(i)
 
-      while (i < 3) {
-          console.log(`Done ${i}`);
-          const connection = await oracledb.getConnection(dbConfig);
+       console.log(dailyStmnts[i]?.name)
 
         result = await connection.execute(dailyStmnts[i]?.query);
 
-        connection.release();
+        
 
         //   console.log(connection);
         const response = result.rows;
@@ -160,22 +165,26 @@ const testAll = async (message, type, changeDate) => {
           dailyStmnts[i].name
         } ini sejumlah ${result.rows.length} row`;
 
-        console.log(Table.print(response));
+        
 
         if (result.rows.length != 0) {
+         console.log(Table.print(response));
           res.push(rows);
           res.push(waSend);
         }
 
         i++;
       }
-
+        connection.release();
       clearInterval(interval);
+
+      console.log(res, 'resnyaa');
+       
 
       res.map((val)=> {
         message.reply(val)
       })
-    }
+   
   } catch (error) {
     console.log(error);
     message.reply("wrong command");

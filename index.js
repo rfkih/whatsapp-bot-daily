@@ -18,22 +18,27 @@ client.on("ready", () => {
 client.on("message", (message) => {
   const content = message.body;
 
-  const type = content.substring(0, 5).toLowerCase();
+  let type = content.substring(0, 5).toLowerCase();
   const number = parseInt(content.substring(5, 7)) - 1;
-  const changeDate = content.substring(7, 9);
+  let changeDate = content.substring(7, 9);
 
-  console.log(type, number, changeDate);
+  //console.log(type, number, changeDate);
 
   if (type === "check" || type === "daily") {
-    // date(changeDate)
+   
     if (number == "-1") {
       return;
     } else {
       test(message, type, number, changeDate);
     }
-    
-  } else if (type === "all") {
-    
+
+  } else if (type === "all" || type === "all-1") {
+    console.log('disini')
+
+    console.log(content)
+     type = content.substring(0,3)
+     changeDate = content.substring(3, 6)
+
     testAll(message, type, changeDate);
 
   } else if (type === "list") {
