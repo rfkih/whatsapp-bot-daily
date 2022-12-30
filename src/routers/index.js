@@ -20,7 +20,7 @@ const test = async (message, content) => {
     const checkStmnts = [bfCount, checkCloseBranch]
         console.log(content)
  
-    const dailyStmnts = []
+    const dailyStmnts = [ ]
 
     try {
         connection = await oracledb.getConnection(dbConfig);
