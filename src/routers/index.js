@@ -8,10 +8,13 @@ const Table = require("easy-table");
 const {
   bfCount,
   checkCloseBranch,
-  expenseVBudget,
   allocationCollateral,
   checkBatchJob,
   closeAccountHavebalance,
+  giroPrkCancelCheck,
+  GlBalanceCheck,
+  GlBalanceVsTrxBal,
+  liabiltyMinusCheck
 } = require("./data");
 
 
@@ -29,6 +32,10 @@ const test = async (message, type, number) => {
 
   const dailyStmnts = [
     closeAccountHavebalance,
+    giroPrkCancelCheck,
+    GlBalanceCheck,
+    GlBalanceVsTrxBal,
+    liabiltyMinusCheck,
     checkBatchJob,
     allocationCollateral,
   ];
@@ -110,7 +117,7 @@ const test = async (message, type, number) => {
 
 
 
-      message.reply("process will be updated every 30 seconds. please wait");
+      message.reply(`Table selected : ${dailyStmnts[parseInt(number)]?.name} process will be updated every 30 seconds. please wait`);
       //  qwerty = false
       result = await connection.execute(dailyStmnts[parseInt(number)]?.query);
 
@@ -138,6 +145,7 @@ const test = async (message, type, number) => {
   } catch (error) {
     console.log(error);
     message.reply("wrong command");
+    clearInterval(interval)
     connection.release();
   }
 };

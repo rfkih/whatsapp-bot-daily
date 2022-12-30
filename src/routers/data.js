@@ -87,37 +87,231 @@ var giroPrkCancelCheck = {
 ORDER BY REF_NO`,
 }
 
-var expenseVBudget = `SELECT * FROM (
-    SELECT T1.BUSI_CD,
-           T1.MNG_BR,
-           T1.ASSIGN_AMT + ADD_AMT - ADD_CAMT + PLUS_AMT - MINUS_AMT AS TOT_BUDGET,
-           T2.DR_AMT - T2.CR_AMT AS TOT_EXPENSE,
-           T1.TOTAL_AMT -
-           (T1.ASSIGN_AMT + ADD_AMT - ADD_CAMT + PLUS_AMT - MINUS_AMT) +
-           (T2.DR_AMT - T2.CR_AMT) AS DIFF
-      FROM (SELECT *
-              FROM ACOM_EPB_BASE A
-             WHERE A.MNG_YY = '2022'
-               AND A.BUSI_CD IN (SELECT CODE
-                                   FROM ACOM_COMH_CODE A
-                                  WHERE A.TYPE = 'F162'
-                                    AND A.CODE3 = '2')) T1,
-           (SELECT B.ETC5 AS BUSI_CD,
-                   A.MNG_BR,
-                   SUM(A.DR_AMT) AS DR_AMT,
-                   SUM(A.CR_AMT) AS CR_AMT
-              FROM ACOM_EPB_BASE A, ACOM_COMH_CODE B
-             WHERE A.MNG_YY = '2022'
-               AND B.TYPE = 'F162'
-               AND B.CODE3 = '3'
-               AND A.BUSI_CD = B.CODE
-             GROUP BY B.ETC5, A.MNG_BR) T2
-     WHERE T1.MNG_BR = T2.MNG_BR
-       AND T1.BUSI_CD = T2.BUSI_CD
-     ORDER BY T1.BUSI_CD, T1.MNG_BR)
-     WHERE MNG_BR NOT IN ('4101','1206','1107','1405') -- CABANG 4101 SUDAH TUTUP)
-     AND DIFF <> 0
-    `;
+var GlBalanceCheck = {
+    name : 'GL Balance Check',
+    query : `SELECT *
+    FROM (SELECT 'BS' AS GBBBBBBBBBB,
+                    TR_IL,
+                 --TO_CHAR(TR_IL, 'YYYY/MM/DD'),
+                 BR_NO,
+                 SUM(DR) AS DR,
+                 SUM(CR) AS CR,
+                 SUM(DR) - SUM(CR) AS DIFFFFFFFFFF
+            FROM (SELECT TR_IL ,
+                         BR_NO,
+                         CASE
+                           WHEN SUBSTR(AC_CD, 1, 1) = '1' THEN
+                            AF_FJAN
+                           ELSE
+                            0
+                         END AS DR,
+                         CASE
+                           WHEN SUBSTR(AC_CD, 1, 1) IN ('2', '3') THEN
+                            AF_FJAN
+                           ELSE
+                            0
+                         END AS CR
+                    FROM AACT_ACT_DATE
+                   WHERE TR_IL = trunc(sysdate)
+                     AND SUBSTR(AC_CD, 1, 1) IN ('1', '2', '3'))
+           GROUP BY TR_IL, BR_NO
+          UNION ALL
+          SELECT 'PL' AS GB,
+                 TR_IL,
+                 BR_NO,
+                 SUM(DR),
+                 SUM(CR),
+                 (SUM(DR) - SUM(CR)) + SUM(DIFF)
+            FROM (SELECT TR_IL,
+                         BR_NO,
+                         CASE
+                           WHEN SUBSTR(AC_CD, 1, 1) IN ('5') THEN
+                            AF_FJAN --?? / DR
+                           ELSE
+                            0
+                         END AS DR,
+                         CASE
+                           WHEN SUBSTR(AC_CD, 1, 1) IN ('4') THEN
+                            AF_FJAN --?? / ?? / CR
+                           ELSE
+                            0
+                         END AS CR,
+                         CASE
+                           WHEN AC_CD = '33101001' THEN
+                            AF_FJAN
+                           ELSE
+                            0
+                         END AS DIFF
+                    FROM AACT_ACT_DATE
+                   WHERE TR_IL = trunc(sysdate))
+           GROUP BY TR_IL, BR_NO
+          UNION ALL
+          SELECT 'BS/PL' AS GB,
+                 TR_IL,
+                 BR_NO,
+                 SUM(DR),
+                 SUM(CR),
+                 SUM(DR) - SUM(CR)
+            FROM (SELECT TR_IL,
+                         BR_NO,
+                         CASE
+                           WHEN SUBSTR(AC_CD, 1, 1) IN ('1', '5') THEN
+                            AF_FJAN --?? / DR
+                           ELSE
+                            0
+                         END AS DR,
+                         CASE
+                           WHEN SUBSTR(AC_CD, 1, 1) IN ('2', '3', '4') THEN
+                            AF_FJAN --?? / ?? / CR
+                           ELSE
+                            0
+                         END AS CR
+                    FROM AACT_ACT_DATE
+                   WHERE TR_IL = trunc(sysdate)
+                     AND AC_CD != '33101001')
+           GROUP BY TR_IL, BR_NO)
+  --ORDER BY GB, TR_IL, BR_NO 
+  UNION ALL
+  --RCH_BAL 
+  SELECT 'AFEX_RCH_BAL',
+         T1.TR_IL,
+         T1.CD,
+         T1.SHW_OPBS - NVL(T2.AMT, 0),
+         T1.SHW_CLBS,
+         (T1.SHW_OPBS - NVL(T2.AMT, 0)) - T1.SHW_CLBS AS DIFF
+    FROM AFEX_RCH_BAL T1
+    LEFT OUTER JOIN (SELECT CD,
+                            SUM(CASE
+                                  WHEN DRCR_GB = 'D' THEN
+                                   DRCR_AMT * -1
+                                  WHEN DRCR_GB = 'C' THEN
+                                   DRCR_AMT
+                                END) AS AMT
+                       FROM AFEX_RCH_PEND
+                      WHERE TR_IL = trunc(sysdate)
+                        AND SA_GB = 'S'
+                      GROUP BY CD) T2
+      ON T1.CD = T2.CD
+   WHERE T1.TR_IL = trunc(sysdate)
+  --   AND T1.CD < 2011
+  UNION ALL
+  --28911001
+  --WASH
+  SELECT 'WASH',
+         A.TR_IL,
+         A.BR_NO,
+         NVL(SUM(DECODE(B.BLDRCR_GB, 'D', A.AF_FJAN, 0)), 0) AS drFamt,
+         NVL(SUM(DECODE(B.BLDRCR_GB, 'C', A.AF_FJAN, 0)), 0) AS crFamt,
+         NVL(SUM(DECODE(B.BLDRCR_GB, 'D', A.AF_FJAN, -A.AF_FJAN)), 0) AS fdiff
+    FROM AACT_ACT_DATE A, ACOM_COM_ACTCD B
+   WHERE A.BSPL_GB = 'B'
+     AND A.TR_IL = trunc(sysdate)
+     AND A.BSPL_GB = B.BSPL_GB
+     AND A.AC_CD = B.AC_CD
+     AND A.AC_CD = '28911001'
+     AND B.BR_NO = '0000'
+     AND B.AC_KD NOT IN ('6', '7', '8', '9')
+   GROUP BY A.BR_NO, A.TR_IL
+  UNION ALL
+  --ATMCASH
+  SELECT 'ATMCASH', A.*, A.ATM_DT_BAL - A.ACT_DT_BAL AS DIFF
+    FROM (SELECT A.TR_DT,
+                 A.BR_NO,
+                 SUM(A.AF_BAL) AS ATM_DT_BAL,
+                 B.AF_FJAN AS ACT_DT_BAL
+            FROM AACT_ATM_DATE A
+           INNER JOIN AACT_ACT_DATE B
+              ON A.AC_CD = B.AC_CD
+             AND A.BR_NO = B.BR_NO
+             AND A.TR_DT = B.TR_IL
+           WHERE 1 = 1
+           GROUP BY A.TR_DT, A.BR_NO, B.AF_FJAN) A
+   WHERE A.TR_DT = trunc(sysdate)
+   `,
+}
+
+var GlBalanceVsTrxBal = {
+    name : "GL Balance VS TRX Bal",
+    query : `SELECT B.*, A.*
+    FROM ACOM_COM_ACTCD A, --TABEL COA
+         (SELECT BR_NO,
+                 COA_CD,
+                 CCY,
+                 SUM(TRX_AMT) AS TRX_AMT,
+                 SUM(ACT_AMT) AS ACT_AMT,
+                 SUM(TRX_AMT) - SUM(ACT_AMT) AS DIFF_AMT
+            FROM (SELECT BR_NO,
+                         ATIT_CD AS COA_CD,
+                         CCY,
+                         SUM(BAL_AMT) AS TRX_AMT,
+                         0 AS ACT_AMT
+                    FROM AACT_TRX_BAL --TABEL TRANSAKSI BALANCE
+                   WHERE BAL_AMT != 0
+                        --AND     ATIT_CD   = '18304101'
+                        --AND     BR_NO     = '1201'
+                     AND trunc(sysdate) BETWEEN APCL_STR_DT AND APCL_END_DT
+                   GROUP BY BR_NO, ATIT_CD, CCY
+                  UNION ALL
+                  SELECT BR_NO, AC_CD, CCY, 0, SUM(AF_FJAN) AS ACT_AMT
+                    FROM AACT_ACT_DATE --TABEL GENERAL LEDGER
+                   WHERE TR_IL = trunc(sysdate)
+                        --AND     AC_CD = '18304101'
+                     AND AF_BJAN != 0
+                   GROUP BY BR_NO, AC_CD, CCY)
+           GROUP BY BR_NO, COA_CD, CCY
+          HAVING SUM(TRX_AMT) - SUM(ACT_AMT) != 0) B
+   WHERE A.BR_NO = '0000'
+     AND A.AC_CD = B.COA_CD
+     AND A.AC_KD IN ('1', '2', '3', '6', '7', '8', '9')
+     AND A.AC_CD NOT IN ('10101001' -- Cash in Vault
+                        ,'10102001' -- Petty Cash
+                        ,'10104001' -- ATM Cash
+                        ,'10401001' -- Demand Deposit at Bank Indonesia
+                        ,'10421001' -- Demand Deposit at Domestic Banks
+                        ,'18302101' -- Suspence Receivable ATM
+                        ,'18809001' -- Inter Office Account
+                        ,'28809001' -- Inter Office A/C (Settlement)
+                        ,'19959002' -- ARTAJASA Receivable
+                        ,'19959003' -- ALTO Receivable
+                        ,'28936001' -- Liability to Indosat Due to Overbooking Transaction
+                        ,'28937001' -- Liability to XL Due to Overbooking Transaction
+                        ,'28938001' -- Liability to Smartfen Due to Overbooking Transaction
+                        ,'28941001' -- Liability to ARTAJASA 
+                        ,'28942001' -- Liability to ATM Fee
+                        ,'28943001' -- Liability to  Join Debit Due to Overbooking Transaction
+                        ,'33001001' -- Previous Years Accumulated Profit/Loss
+                        ,'33101001' -- Current Year Profit/Loss
+                        ,'28090001'
+                                              ,'28911001'
+                                              ,'80000002'
+                                              ,'90000002'
+                                              ,'28944001'
+                                              ,'28940001'
+                                              ,'20040002')
+   ORDER BY B.COA_CD, B.BR_NO, B.CCY`
+}
+
+var liabiltyMinusCheck = {
+    name : "Liability Minus Check",
+    query : `SELECT A.TR_IL, A.BR_NO, B.ENM AS COA_NM, A.AC_CD AS COA, A.AF_FJAN, A.CCY, '' AS REF_NO
+    FROM AACT_ACT_DATE A, ACOM_COM_ACTCD B --TABEL GL DAN COA 
+   WHERE A.AC_CD = B.AC_CD
+     AND A.TR_IL = TRUNC(SYSDATE)
+     AND A.AC_CD LIKE '2%' --COA LIAB
+     AND A.AC_CD <> '28991501' --COA CKPN NOT INCLUDE
+     AND A.AF_FJAN < 0
+  UNION ALL
+  SELECT C.APCL_STR_DT, C.BR_NO, D.ENM AS COA_NM, C.ATIT_CD AS COA, C.BAL_AMT, C.CCY, C.REF_NO
+    FROM AACT_TRX_BAL C, ACOM_COM_ACTCD D --TABEL TRANSAKSI BALANCE DAN COA 
+   WHERE C.ATIT_CD = D.AC_CD
+     AND C.ATIT_CD LIKE '2%'
+     AND C.ATIT_CD <> '28991501' --COA CKPN NOT INCLUDE
+     AND TRUNC(SYSDATE)-1 BETWEEN APCL_STR_DT AND APCL_END_DT
+     AND C.BAL_AMT < 0
+     AND C.REF_NO NOT LIKE 'DJN%'
+     --and C.APCL_STR_DT > TO_DATE('18072019', 'DDMMYYYY')`
+}
+
 
 var allocationCollateral = {
   name: "Allocation Collateral",
@@ -155,9 +349,11 @@ ORDER BY C.PROC_DT, C.STR_TM`,
 module.exports = {
   bfCount,
   checkCloseBranch,
-  expenseVBudget,
   allocationCollateral,
   checkBatchJob,
   closeAccountHavebalance,
-  giroPrkCancelCheck
+  giroPrkCancelCheck,
+  GlBalanceCheck,
+  GlBalanceVsTrxBal,
+  liabiltyMinusCheck
 };
