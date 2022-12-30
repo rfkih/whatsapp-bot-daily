@@ -5,17 +5,8 @@ oracledb.outFormat = oracledb.OUT_FORMAT_OBJECT;
 const { Client, LocalAuth, MessageMedia } = require("whatsapp-web.js");
 const Table = require("easy-table");
 
-const {
-  bfCount,
-  checkCloseBranch,
-  allocationCollateral,
-  checkBatchJob,
-  closeAccountHavebalance,
-  giroPrkCancelCheck,
-  GlBalanceCheck,
-  GlBalanceVsTrxBal,
-  liabiltyMinusCheck
-} = require("./data");
+const {date} = require("./data")
+
 
 
 const libPath = "C:\\oracle\\instantclient_21_8";
@@ -25,26 +16,67 @@ if (libPath && fs.existsSync(libPath)) {
   oracledb.initOracleClient({ libDir: libPath });
 }
 
-const test = async (message, type, number) => {
-  const checkStmnts = [bfCount, checkCloseBranch];
-  console.log(type);
-  console.log(number);
+const test = async (message, type, number, changeDate) => {
+ 
 
-  const dailyStmnts = [
+  date(changeDate)
+
+  const {
+    bfCount,
+    checkDwi,
+    checkCloseBranch,
+    afterCloseBranch,
+    allocationCollateral,
+    checkBatchJobMonday,
+    checkBatchJobTuesdayFriday,
+    checkBatchJobFirstDay,
+    accrualHaveNormalAccrualBal,
+    accrualHaveNplAcrrualBal,
+    nplAcrualAndNormalAccrualBal,
+    nplHaveNormalAccrualOrNonNplHaveNplAccrual,
+    transactionBackdate,
     closeAccountHavebalance,
     giroPrkCancelCheck,
     GlBalanceCheck,
     GlBalanceVsTrxBal,
     liabiltyMinusCheck,
-    checkBatchJob,
-    allocationCollateral,
-  ];
+    loanBaseNSwithLoanSch,
+    loanBatchPaymentProcess,
+    otBatchCheck,
+    wrongAmort,
+  } = require("./data");
 
+  const dailyStmnts = [
+    afterCloseBranch,
+    allocationCollateral,
+    checkBatchJobMonday,
+    checkBatchJobTuesdayFriday,
+    checkBatchJobFirstDay,
+    accrualHaveNormalAccrualBal,
+    accrualHaveNplAcrrualBal,
+    nplAcrualAndNormalAccrualBal,
+    nplHaveNormalAccrualOrNonNplHaveNplAccrual,
+    transactionBackdate,
+    closeAccountHavebalance,
+    giroPrkCancelCheck,
+    GlBalanceCheck,
+    GlBalanceVsTrxBal,
+    liabiltyMinusCheck,
+    loanBaseNSwithLoanSch,
+    loanBatchPaymentProcess,
+    otBatchCheck,
+    wrongAmort,
+  ];
+  
+  const checkStmnts = [bfCount, checkCloseBranch, checkDwi];
+  console.log(type);
+  console.log(number);
   const connection = await oracledb.getConnection(dbConfig);
+  
   try {
     if (type === "check") {
-      const result = await connection.execute(checkStmnts[parseInt(number)]);
       console.log(checkStmnts[0]);
+      const result = await connection.execute(checkStmnts[parseInt(number)]);
       //console.log(connection._inProgress);
       connection.release();
       //console.log(connection._inProgress);
@@ -100,30 +132,25 @@ const test = async (message, type, number) => {
 
       let result;
 
-      var interval =   setInterval(() => {
+      var interval = setInterval(() => {
+        time += 30;
+        message.reply(`check in progress. Time elapsed ${time} seconds`);
 
-           
-                time += 30;
-                message.reply(`check in progress. Time elapsed ${time} seconds`);
-      
-                if (time == 120) {
-                  message.reply("sabar ya");
-                
-            
-      
-          } 
-        }, 30000);
+        if (time == 120) {
+          message.reply("sabar ya");
+        }
+      }, 30000);
 
-
-
-
-      message.reply(`Table selected : ${dailyStmnts[parseInt(number)]?.name} process will be updated every 30 seconds. please wait`);
+      message.reply(
+        `Table selected : ${
+          dailyStmnts[parseInt(number)]?.name
+        } process will be updated every 30 seconds. please wait`
+      );
       //  qwerty = false
       result = await connection.execute(dailyStmnts[parseInt(number)]?.query);
 
-  
-    clearInterval(interval)
-    
+      clearInterval(interval);
+
       console.log("ini abis await");
 
       connection.release();
@@ -145,7 +172,7 @@ const test = async (message, type, number) => {
   } catch (error) {
     console.log(error);
     message.reply("wrong command");
-    clearInterval(interval)
+    clearInterval(interval);
     connection.release();
   }
 };

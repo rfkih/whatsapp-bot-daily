@@ -1,10 +1,59 @@
-var bfCount = `select count(1) as count from aact_trx_actlog_bf where trx_il = trunc(sysdate)`;
+var changeDate = "";
+
+const date = (i = "") => {
+  console.log(i, "ini i");
+  if (i) {
+    changeDate = "-1";
+    console.log(changeDate, "ini changeDate");
+  }else {
+    changeDate = ""
+};
+  console.log(changeDate, "ini changeDate diluar if");
+};
+
+var bfCount = `select count(1) as count from aact_trx_actlog_bf where trx_il = trunc(sysdate) ${changeDate}`;
 
 var checkCloseBranch = `select b.enm, a.br_no, to_char(a.open_il, 'YYYY/MM/DD') as open_il , a.bon_clsgb, a.CLS_BIT
                         from aact_acc_clsbr a, acom_bix_base b
                         where a.br_no = b.br_no
                         and tr_il = trunc(sysdate)
                         order by a.cls_bit desc`;
+
+var checkDwi = ` select cd, remark from acom_reh_his where base_dt = trunc(sysdate) and cd = 'CM603'`;
+
+var afterCloseBranch = {
+  name: "AFTER CLOSE - EXPENSE VS BUDGET",
+  query: `SELECT * FROM (
+        SELECT T1.BUSI_CD,
+               T1.MNG_BR,
+               T1.ASSIGN_AMT + ADD_AMT - ADD_CAMT + PLUS_AMT - MINUS_AMT AS TOT_BUDGET,
+               T2.DR_AMT - T2.CR_AMT AS TOT_EXPENSE,
+               T1.TOTAL_AMT -
+               (T1.ASSIGN_AMT + ADD_AMT - ADD_CAMT + PLUS_AMT - MINUS_AMT) +
+               (T2.DR_AMT - T2.CR_AMT) AS DIFF
+          FROM (SELECT *
+                  FROM ACOM_EPB_BASE A
+                 WHERE A.MNG_YY = '2022'
+                   AND A.BUSI_CD IN (SELECT CODE
+                                       FROM ACOM_COMH_CODE A
+                                      WHERE A.TYPE = 'F162'
+                                        AND A.CODE3 = '2')) T1,
+               (SELECT B.ETC5 AS BUSI_CD,
+                       A.MNG_BR,
+                       SUM(A.DR_AMT) AS DR_AMT,
+                       SUM(A.CR_AMT) AS CR_AMT
+                  FROM ACOM_EPB_BASE A, ACOM_COMH_CODE B
+                 WHERE A.MNG_YY = '2022'
+                   AND B.TYPE = 'F162'
+                   AND B.CODE3 = '3'
+                   AND A.BUSI_CD = B.CODE
+                 GROUP BY B.ETC5, A.MNG_BR) T2
+         WHERE T1.MNG_BR = T2.MNG_BR
+           AND T1.BUSI_CD = T2.BUSI_CD
+         ORDER BY T1.BUSI_CD, T1.MNG_BR)
+         WHERE MNG_BR NOT IN ('4101','1206','1107','1405') -- CABANG 4101 SUDAH TUTUP)
+         AND DIFF <> 0`,
+};
 
 var closeAccountHavebalance = {
   name: "CLOSE ACCOUNT HAVE BALANCE IN TRX_BAL",
@@ -24,8 +73,8 @@ ORDER BY REF_NO`,
 };
 
 var giroPrkCancelCheck = {
-    name : "Giro PRK Cancel Check",
-    query : `      SELECT A.*                                                                                                      
+  name: "Giro PRK Cancel Check",
+  query: `      SELECT A.*                                                                                                      
     , CASE WHEN A.L_BAL_AMT > 0 THEN 'C'                                                                    
            ELSE 'D'                                                                                         
             END ADJ_L_DRCR                                                                                  
@@ -85,11 +134,11 @@ var giroPrkCancelCheck = {
         GROUP BY REF_NO,CCY,BR_NO                                                                              
     ) A                                                                                                        
 ORDER BY REF_NO`,
-}
+};
 
 var GlBalanceCheck = {
-    name : 'GL Balance Check',
-    query : `SELECT *
+  name: "GL Balance Check",
+  query: `SELECT *
     FROM (SELECT 'BS' AS GBBBBBBBBBB,
                     TR_IL,
                  --TO_CHAR(TR_IL, 'YYYY/MM/DD'),
@@ -228,11 +277,11 @@ var GlBalanceCheck = {
            GROUP BY A.TR_DT, A.BR_NO, B.AF_FJAN) A
    WHERE A.TR_DT = trunc(sysdate)
    `,
-}
+};
 
 var GlBalanceVsTrxBal = {
-    name : "GL Balance VS TRX Bal",
-    query : `SELECT B.*, A.*
+  name: "GL Balance VS TRX Bal",
+  query: `SELECT B.*, A.*
     FROM ACOM_COM_ACTCD A, --TABEL COA
          (SELECT BR_NO,
                  COA_CD,
@@ -288,12 +337,12 @@ var GlBalanceVsTrxBal = {
                                               ,'28944001'
                                               ,'28940001'
                                               ,'20040002')
-   ORDER BY B.COA_CD, B.BR_NO, B.CCY`
-}
+   ORDER BY B.COA_CD, B.BR_NO, B.CCY`,
+};
 
 var liabiltyMinusCheck = {
-    name : "Liability Minus Check",
-    query : `SELECT A.TR_IL, A.BR_NO, B.ENM AS COA_NM, A.AC_CD AS COA, A.AF_FJAN, A.CCY, '' AS REF_NO
+  name: "Liability Minus Check",
+  query: `SELECT A.TR_IL, A.BR_NO, B.ENM AS COA_NM, A.AC_CD AS COA, A.AF_FJAN, A.CCY, '' AS REF_NO
     FROM AACT_ACT_DATE A, ACOM_COM_ACTCD B --TABEL GL DAN COA 
    WHERE A.AC_CD = B.AC_CD
      AND A.TR_IL = TRUNC(SYSDATE)
@@ -309,9 +358,43 @@ var liabiltyMinusCheck = {
      AND TRUNC(SYSDATE)-1 BETWEEN APCL_STR_DT AND APCL_END_DT
      AND C.BAL_AMT < 0
      AND C.REF_NO NOT LIKE 'DJN%'
-     --and C.APCL_STR_DT > TO_DATE('18072019', 'DDMMYYYY')`
-}
+     --and C.APCL_STR_DT > TO_DATE('18072019', 'DDMMYYYY')`,
+};
 
+var loanBaseNSwithLoanSch = {
+  name: "Loan Base not Same With Loan Schedule",
+  query: `SELECT *
+    FROM (SELECT T1.*,
+                 T2.PLAN_AMT AS SCH_PLAN_AMT,
+                 T1.LON_JAN - (T2.PLAN_AMT - T2.PAY_AMT) AS DIFF --TOTAL PINJAMAN - TOTAL PINJAMAN DI SCHEDULE
+            FROM (SELECT A.REF_NO, A.LON_JAN
+                    FROM ADST_LNB_BASE A, ACOM_CONT_BASE B --TABEL LOAN BASE AND ACCOUNT FASILTAS
+                   WHERE A.REF_NO = B.REF_NO
+                     AND B.STS = '0') T1,
+                 (SELECT A.REF_NO,
+                         SUM(PLAN_AMT) AS PLAN_AMT,
+                         SUM(PAY_AMT) AS PAY_AMT
+                    FROM ADST_LNB_SCH A -- TABEL LOAN SCHEDULE
+                   WHERE A.REF_NO IN (SELECT B.REF_NO
+                                        FROM ACOM_CONT_BASE B
+                                       WHERE B.STS = '0')
+                     AND A.SCH_GB = '001'
+                     AND STS = '0'
+                     AND A.ADJ_SEQ = 0
+                   GROUP BY REF_NO) T2
+           WHERE T1.REF_NO = T2.REF_NO
+             AND T1.LON_JAN <> T2.PLAN_AMT) TT1
+   WHERE (TT1.DIFF > 1 OR TT1.DIFF < -1)`,
+};
+
+var loanBatchPaymentProcess = {
+  name: "Loan Batch Payment Process",
+  query: `SELECT  *
+    FROM    ACOM_ATB_BATCH
+    WHERE   VAL_DT    = TRUNC(SYSDATE)
+    AND     TR_TYPE   LIKE 'LN%'
+    AND     ERR_MSG   IS NULL`,
+};
 
 var allocationCollateral = {
   name: "Allocation Collateral",
@@ -326,8 +409,43 @@ AND     PROC_STS  <> 2
 `,
 };
 
-var checkBatchJob = {
-  name: "Check Batch Job",
+var otBatchCheck = {
+  name: "OT Batch Check",
+  query: `SELECT a.proc_dt,
+    a.bat_pgm_id,
+    a.proc_brno,
+    proc_sts,
+    str_tm,
+    end_tm,
+    (substr(end_tm, 0, 2) * 60 + substr(end_tm, 4, 2) +
+    substr(end_tm, 7, 2) / 60) -
+    (substr(str_tm, 0, 2) * 60 + substr(str_tm, 4, 2) +
+    substr(str_tm, 7, 2) / 60) as execution_time
+FROM ACOM_BAT_PROCLST A
+WHERE A.PROC_DT = TRUNC(SYSDATE)
+AND A.BAT_PGM_ID LIKE 'OT%'
+AND PROC_STS <> 2
+order by str_tm`,
+};
+
+var wrongAmort = {
+  name: "Wrong Amortization",
+  query: `select *
+    from IFRS_DD_BY_CFLW_DPRC_PTCL a
+   where (BASC_DT, IFRS_ACCT_MGNT_NO, DPRC_DT) in
+         (select BASC_DT, IFRS_ACCT_MGNT_NO, max(DPRC_DT) DPRC_DT
+            from IFRS_DD_BY_CFLW_DPRC_PTCL z
+           WHERE z.ifrs_acct_mgnt_no not like 'DAG%'
+             and z.comm_cd not like '9999%'
+           group by BASC_DT, IFRS_ACCT_MGNT_NO
+          )
+     and DPRC_TGT_AMT < 0
+     and a.comm_cd not like '99999%'
+   order by BASC_DT desc, IFRS_ACCT_MGNT_NO`,
+};
+
+var checkBatchJobMonday = {
+  name: "Check Batch Job For Every Monday",
   query: `SELECT PROC_DT, BAT_PGM_ID, SEQ_NO, STR_DT, STR_TM, END_DT, END_TM, REG_EMP_NO, 
 CASE 
 WHEN PROC_STS = '1' THEN 'ON PROCESSING' 
@@ -346,14 +464,233 @@ OR RTN_MSG LIKE '(cmb_dt_reconcile:%')                       -- PRINTER IS NOT O
 ORDER BY C.PROC_DT, C.STR_TM`,
 };
 
+var checkBatchJobTuesdayFriday = {
+  name: "Check Batch Job For Tueday ~ Friday ",
+  query: `SELECT PROC_DT, BAT_PGM_ID, SEQ_NO, STR_DT, STR_TM, END_DT, END_TM, REG_EMP_NO, 
+    CASE 
+    WHEN PROC_STS = '1' THEN 'ON PROCESSING' 
+    WHEN PROC_STS = '2' THEN 'SUCCESS' ELSE 'FAILED' END AS STATUS, 
+    CASE 
+    WHEN RTN_MSG LIKE '(atb6000:9005)(atb6000:9009)(CMG_TPM:1002)%' THEN 'RUNNING ON EOM' ELSE RTN_MSG END AS RTN_MSG FROM 
+    (
+    SELECT * FROM ACOM_BAT_PROCLST A WHERE A.PROC_DT >= TRUNC(SYSDATE) AND A.STR_TM > '07:00:00' AND BAT_PGM_ID <> 'RTGS_ACTUAL_REGIST' --TABEL AUTO BATCH
+    ) C
+    WHERE PROC_STS = '9' --STATUS ERROR
+    AND NOT 
+    (RTN_MSG LIKE '(atb6000:9005)(atb6000:9009)(CMG_TPM:1002)%'  -- RUNNING ON EOM
+    OR RTN_MSG LIKE '(CMB_INIT_PASS)%'                           -- WRONG PASS
+    OR RTN_MSG LIKE '(2010:0)%'                                  -- TODAY IS HOLIDAY
+    OR RTN_MSG LIKE '(cmb_dt_reconcile:%')                       -- PRINTER IS NOT OPEN
+    ORDER BY C.PROC_DT, C.STR_TM`,
+};
+
+var checkBatchJobFirstDay = {
+  name: "Check Batch Job For 1st Day of the Month ",
+  query: `select mng_br as branch_no,
+    count(mng_br) as exec_contract,
+    case
+      when count(mng_br) > 0 then
+       'SUCCESS'
+      else
+       'PLEASE CHECK'
+    end as REMARK
+from acom_atb_batch
+where val_dt = LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE), -1)) + 1
+and tr_type like 'DP32%'
+group by mng_br
+order by mng_br asc`,
+};
+
+var accrualHaveNormalAccrualBal = {
+  name: "NPL ACCRUAL HAVE NORMAL ACCRUAL BALANCE",
+  query: `SELECT /*+PARALLEL(XX 16)+*/
+    XX.*
+     FROM (SELECT Z.REF_NO,
+                  X.BIZ_GB,
+                  Z.BAL_AMT AS TRX_BAL,
+                  X.ACR_TOT,
+                  Z.BAL_AMT - X.ACR_TOT AS DIFF
+             FROM (SELECT REF_NO, SUM(BAL_AMT) AS BAL_AMT
+                     FROM AACT_TRX_BAL A
+                    WHERE A.REF_NO IN (SELECT REF_NO
+                                         FROM AACT_ACR_BASE XX
+                                        WHERE XX.ACR_KD = '3'
+                                          AND XX.ACR_GB <> 'N'
+                                          AND XX.SEQ_NO = 0
+                                          AND STS = '0'
+                                          )
+                      AND TRUNC(SYSDATE) BETWEEN APCL_STR_DT AND A.APCL_END_DT 
+                     AND A.ATIT_CD IN ('19101001','19101002','19101004') --COA LOAN 19101001, COA FB 19101002 19101004
+                      AND DTLS_BAL_DV_CD = 'F309'
+                                       --AND A.REF_NO = 'DFB0888221000002'
+                                        GROUP BY REF_NO) Z,
+                  (SELECT /*+ index(B AACT_ACR_BAL_PK) */B.REF_NO, SUM(B.ACR_TOT) AS ACR_TOT, C.BIZ_GB
+                     FROM AACT_ACR_BAL B, AACT_ACR_BASE C
+                    WHERE B.REF_NO = C.REF_NO
+                      AND B.REF_NO IN (SELECT REF_NO
+                                         FROM AACT_ACR_BASE XX
+                                        WHERE XX.ACR_KD = '3'
+                                          AND XX.ACR_GB <> 'N'
+                                          AND XX.SEQ_NO = 0
+                                          AND STS = '0')
+                      AND C.BIZ_SEQ = B.BIZ_SEQ
+                      AND C.BIZ_SUBSEQ = B.BIZ_SUBSEQ
+                      AND C.AC_CD = B.AC_CD
+                      AND C.SEQ_NO = 0
+                      AND C.STS = '0'
+                      AND C.ACR_KD = '3'
+                      AND C.ACR_GB <> 'N'
+                      AND C.REMARK NOT LIKE '%MIG%'
+                    GROUP BY B.REF_NO, C.BIZ_GB) X
+            WHERE Z.REF_NO = X.REF_NO) XX
+    WHERE XX.DIFF <> 0`,
+};
+
+var accrualHaveNplAcrrualBal = {
+  name: "NORMAL ACCRUAL HAVE NPL ACCRUAL BALANCE",
+  query: `SELECT /*+PARALLEL(XX 16)*/
+    XX.*
+     FROM (SELECT Z.REF_NO,
+                  X.BIZ_GB,
+                  Z.BAL_AMT AS TRX_BAL,
+                  X.ACR_TOT,
+                  Z.BAL_AMT - X.ACR_TOT AS DIFF
+             FROM (SELECT REF_NO, BAL_AMT
+                     FROM AACT_TRX_BAL A
+                    WHERE A.REF_NO IN (SELECT REF_NO
+                                         FROM AACT_ACR_BASE XX
+                                        WHERE XX.ACR_KD = '3'
+                                          AND XX.ACR_GB = 'N'
+                                          AND XX.SEQ_NO = 0
+                                          AND STS = '0')
+                      AND TRUNC(SYSDATE) BETWEEN APCL_STR_DT AND A.APCL_END_DT 
+                      AND A.ATIT_CD = '81003001'
+                      AND DTLS_BAL_DV_CD = 'F841') Z,
+                  (SELECT B.REF_NO, SUM(B.ACR_TOT) AS ACR_TOT, C.BIZ_GB
+                     FROM AACT_ACR_BAL B, AACT_ACR_BASE C
+                    WHERE B.REF_NO = C.REF_NO
+                      AND B.REF_NO IN (SELECT REF_NO
+                                         FROM AACT_ACR_BASE XX
+                                        WHERE XX.ACR_KD = '3'
+                                          AND XX.ACR_GB = 'N'
+                                          AND XX.SEQ_NO = 0
+                                          AND STS = '0')
+                      AND C.BIZ_SEQ = B.BIZ_SEQ
+                      AND C.BIZ_SUBSEQ = B.BIZ_SUBSEQ
+                      AND C.AC_CD = B.AC_CD
+                      AND C.SEQ_NO = 0
+                      AND C.STS = '0'
+                      AND C.ACR_KD = '3'
+                      AND C.ACR_GB = 'N'
+                      AND C.REMARK NOT LIKE '%MIG%'
+                    GROUP BY B.REF_NO, C.BIZ_GB) X
+            WHERE Z.REF_NO = X.REF_NO) XX
+    WHERE XX.DIFF <> 0`,
+};
+
+var nplAcrualAndNormalAccrualBal = {
+  name: "NPL ACCRUAL & NORMAL ACCRUAL BALANCE",
+  query: `SELECT * /*+PARALLEL(T1 8) (T2 8)*/
+    FROM (SELECT REF_NO AS REF_NO_OFF, BAL_AMT AS BAL_AMT_OFF
+            FROM AACT_TRX_BAL A
+           WHERE A.REF_NO IN (SELECT REF_NO
+                                FROM AACT_ACR_BASE XX
+                               WHERE XX.ACR_KD = '3'
+                                    --AND XX.ACR_GB = 'N'
+                                 AND XX.SEQ_NO = 0
+                              --AND STS = '0'
+                              )
+             AND TRUNC(SYSDATE) BETWEEN APCL_STR_DT AND A.APCL_END_DT 
+             AND A.ATIT_CD = '81003001'
+             AND DTLS_BAL_DV_CD = 'F841'
+             AND BAL_AMT <> 0) T1,
+         (SELECT REF_NO AS REF_NO_ON, BAL_AMT AS BAL_AMT_ON
+            FROM AACT_TRX_BAL A
+           WHERE A.REF_NO IN (SELECT REF_NO
+                                FROM AACT_ACR_BASE XX
+                               WHERE XX.ACR_KD = '3'
+                                    --AND XX.ACR_GB = 'N'
+                                 AND XX.SEQ_NO = 0
+                              --AND STS = '0'
+                              )
+             AND TRUNC(SYSDATE) BETWEEN APCL_STR_DT AND A.APCL_END_DT 
+             AND A.ATIT_CD = '19101001'
+             AND DTLS_BAL_DV_CD = 'F309'
+             AND BAL_AMT <> 0) T2
+   WHERE T1.REF_NO_OFF = T2.REF_NO_ON`,
+};
+
+var nplHaveNormalAccrualOrNonNplHaveNplAccrual = {
+  name: "NPL HAVE NORMAL ACCRUAL OR NON-NPL HAVE NPL ACCRUAL",
+  query: `SELECT /*+ PARALLEL(A 8)(B 8) (C 8)*/
+    A.REF_NO, C.BAL_AMT, A.DBT_APTC_YN, 'NPL HAVE NORMAL ACCRUAL'
+     FROM ACOM_CONT_BASE A,
+          (SELECT REF_NO,
+                  DECODE(ACRSD_AC, '91003001', '19101001', ACRSD_AC) AS ACRSD_AC
+             FROM AACT_ACR_BASE A
+            WHERE SEQ_NO = '0'
+              AND STS = '0'
+              AND A.ACR_KD = '3') B,
+          AACT_TRX_BAL C
+    WHERE A.REF_NO = B.REF_NO
+      AND A.REF_NO = C.REF_NO
+      AND A.DBT_APTC_YN IN ('3', '4', '5')
+      AND B.ACRSD_AC = C.ATIT_CD
+      AND C.CCY = 'IDR'
+      AND TRUNC(SYSDATE) BETWEEN APCL_STR_DT AND APCL_END_DT
+      AND C.BAL_AMT <> 0
+   UNION ALL
+   SELECT /*+ PARALLEL(A 8)(B 8) (C 8)*/
+    A.REF_NO, C.BAL_AMT, A.DBT_APTC_YN, 'NON-NPL HAVE NPL ACCRUAL'
+     FROM ACOM_CONT_BASE A,
+          (SELECT REF_NO
+             FROM AACT_ACR_BASE A
+            WHERE SEQ_NO = '0'
+              AND STS = '0'
+              AND A.ACR_KD = '3') B,
+          AACT_TRX_BAL C
+    WHERE A.REF_NO = B.REF_NO
+      AND A.REF_NO = C.REF_NO
+      AND A.DBT_APTC_YN NOT IN ('3', '4', '5')
+      AND C.ATIT_CD IN
+          (SELECT ETC1 FROM ACOM_COMH_CODE A WHERE TYPE = 'F1250')
+      AND C.CCY = 'IDR'
+      AND TRUNC(SYSDATE) BETWEEN APCL_STR_DT AND APCL_END_DT
+      AND C.BAL_AMT <> 0`,
+};
+
+var transactionBackdate = {
+  name: "TRANSACTION BACKDATED/ BACK VALUE IN LAST 7 DAYS",
+  query: `SELECT A.REF_NO, A.HIS_NO, A.TRX_BR, A.UPMU_CD || GEOR_CD AS MENU, A.TRX_IL, A.AC_IL, A.IB_IL, A.GIS_IL, A.CAN_IL /*+ PARALLEL(A, 16)*/
+    FROM AACT_TRX_BASE A
+   WHERE A.TRX_IL >= TRUNC(SYSDATE - 7)
+     AND (REF_NO NOT LIKE 'DBT%' AND REF_NO NOT LIKE 'ACR%')
+     AND (A.TRX_IL > A.AC_IL OR
+         (A.AC_IL <> A.IB_IL OR A.AC_IL <> A.GIS_IL OR A.AC_IL < A.CAN_IL))`,
+};
+
 module.exports = {
   bfCount,
+  checkDwi,
+  afterCloseBranch,
   checkCloseBranch,
   allocationCollateral,
-  checkBatchJob,
+  checkBatchJobMonday,
+  checkBatchJobTuesdayFriday,
+  checkBatchJobFirstDay,
+  accrualHaveNormalAccrualBal,
+  accrualHaveNplAcrrualBal,
+  nplAcrualAndNormalAccrualBal,
+  nplHaveNormalAccrualOrNonNplHaveNplAccrual,
+  transactionBackdate,
   closeAccountHavebalance,
   giroPrkCancelCheck,
   GlBalanceCheck,
   GlBalanceVsTrxBal,
-  liabiltyMinusCheck
+  liabiltyMinusCheck,
+  loanBaseNSwithLoanSch,
+  loanBatchPaymentProcess,
+  otBatchCheck,
+  wrongAmort,
+  date,
 };
