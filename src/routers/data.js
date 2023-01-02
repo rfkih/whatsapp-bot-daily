@@ -649,12 +649,12 @@ var checkCloseBranch = `select b.enm, a.br_no, to_char(a.open_il, 'YYYY/MM/DD') 
                           
                           var transactionBackdate = {
                             name: "TRANSACTION BACKDATED/ BACK VALUE IN LAST 7 DAYS",
-                            query: `SELECT A.REF_NO, A.HIS_NO, A.TRX_BR, A.UPMU_CD || GEOR_CD AS MENU, A.TRX_IL, A.AC_IL, A.IB_IL, A.GIS_IL, A.CAN_IL /*+ PARALLEL(A, 16)*/
-                              FROM AACT_TRX_BASE A
-                             WHERE A.TRX_IL >= TRUNC(SYSDATE - 7)
-                               AND (REF_NO NOT LIKE 'DBT%' AND REF_NO NOT LIKE 'ACR%')
-                               AND (A.TRX_IL > A.AC_IL OR
-                                   (A.AC_IL <> A.IB_IL OR A.AC_IL <> A.GIS_IL OR A.AC_IL < A.CAN_IL))`,
+                            query: `SELECT A.REF_NO, A.HIS_NO, A.TRX_BR, A.UPMU_CD || GEOR_CD AS MENU, TO_CHAR(A.TRX_IL, 'YYYY-MM-DD') AS TRX_IL , TO_CHAR(A.AC_IL, 'YYYY-MM-DD') AS AC_IL , TO_CHAR(A.IB_IL) AS IB_IL , TO_CHAR(A.GIS_IL) AS GIS_IL, A.CAN_IL /*+ PARALLEL(A, 16)*/
+                            FROM AACT_TRX_BASE A
+                           WHERE A.TRX_IL >= TRUNC(SYSDATE - 7)
+                             AND (REF_NO NOT LIKE 'DBT%' AND REF_NO NOT LIKE 'ACR%')
+                             AND (A.TRX_IL > A.AC_IL OR
+                                 (A.AC_IL <> A.IB_IL OR A.AC_IL <> A.GIS_IL OR A.AC_IL < A.CAN_IL))`,
                           };
 
                           var checkDwi = ` select cd, remark from acom_reh_his where base_dt = trunc(sysdate) ${changeDate} and cd = 'CM603'`;
