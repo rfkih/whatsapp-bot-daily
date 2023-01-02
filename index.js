@@ -15,6 +15,8 @@ client.on("ready", () => {
   console.log("Client is ready!");
 });
 
+let i = 0;
+
 client.on("message", (message) => {
   const content = message.body;
 
@@ -25,22 +27,19 @@ client.on("message", (message) => {
   //console.log(type, number, changeDate);
 
   if (type === "check" || type === "daily") {
-   
     if (number == "-1") {
       return;
     } else {
       test(message, type, number, changeDate);
     }
-
   } else if (type === "all" || type === "all-1") {
     console.log('disini')
 
     console.log(content)
-     type = content.substring(0,3)
-     changeDate = content.substring(3, 6)
+    type = content.substring(0,3)
+    changeDate = content.substring(3, 6)
 
     testAll(message, type, changeDate);
-
   } else if (type === "list") {
     message.reply(`
 Command List :

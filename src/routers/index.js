@@ -14,23 +14,24 @@ if (libPath && fs.existsSync(libPath)) {
   oracledb.initOracleClient({ libDir: libPath });
 }
 
+let count = 0;
+
 const test = async (message, type, number, changeDate) => {
   //   date(changeDate)
 
   const dailyStmnts = date(changeDate, type);
 
   const checkStmnts = date(changeDate, type);
-  console.log(type);
-  console.log(number);
+  // console.log(type);
+  // console.log(number);
   const connection = await oracledb.getConnection(dbConfig);
-
   try {
     if (type === "check") {
-      console.log(checkStmnts[parseInt(number)]);
+      // console.log(checkStmnts[parseInt(number)]);
       const result = await connection.execute(checkStmnts[parseInt(number)]);
       //console.log(connection._inProgress);
       connection.release();
-      console.log(result.rows);
+      // console.log(result.rows);
       const response = result.rows.map((val) => {
         if (number == "0") {
           return;
@@ -66,7 +67,7 @@ const test = async (message, type, number, changeDate) => {
       } else {
         const waSend = Table.print(response);
 
-        console.log(Table.print(response));
+        // console.log(Table.print(response));
 
         message.reply(waSend);
       }
@@ -122,18 +123,24 @@ const test = async (message, type, number, changeDate) => {
 const testAll = async (message, type, changeDate) => {
     
     const res = [];
-    
 
     const dailyStmnts = date(changeDate, type);
 
-    console.log(dailyStmnts?.length,'length dailystments')
-   
+    // console.log(dailyStmnts?.length,'length dailystments')
+    count++;
+    console.log(count);
+    if (count > 1) {
+      message.reply("Sorry, this command is already Running. Please wait for previous command to finish")
+      return;
+    }
+
+    const connection = await oracledb.getConnection(dbConfig);
+
   try {
   
       let time = 0;
 
       let result;
-      const connection = await oracledb.getConnection(dbConfig);
       message.reply(`Get All data progress Start. Please wait!`);
 
       var interval = setInterval(() => {
@@ -143,38 +150,34 @@ const testAll = async (message, type, changeDate) => {
       }, 120000);
 
       let i = 0;
-      
+      // console.log(connection);
+
       while (i < dailyStmnts.length) {
        
-       console.log(i)
-       console.log(dailyStmnts[i]?.name)
+      //  console.log(i)
+      //  console.log(dailyStmnts[i]?.name)
        message.reply(`${i+1}. ${dailyStmnts[i]?.name}`);
 
         result = await connection.execute(dailyStmnts[i]?.query);
 
-        
-
         //   console.log(connection);
         const response = result.rows;
-
         const waSend = Table.print(response);
 
         const rows = `Data pada ${
           dailyStmnts[i].name
         } ini sejumlah ${result.rows.length} row`;
 
-        
-
         if (result.rows.length != 0) {
-         console.log(Table.print(response));
+        //  console.log(Table.print(response));
           res.push(rows);
           res.push(waSend);
         }
-
         i++;
       }
         connection.release();
       clearInterval(interval);
+      count = 0;
 
       console.log(res, 'resnyaa');
        
