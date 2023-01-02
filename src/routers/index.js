@@ -126,7 +126,7 @@ const testAll = async (message, type, changeDate) => {
 
     const dailyStmnts = date(changeDate, type);
 
-    console.log(dailyStmnts?.length,'length dailystments')
+   
    
   try {
   
@@ -135,6 +135,9 @@ const testAll = async (message, type, changeDate) => {
       let result;
       const connection = await oracledb.getConnection(dbConfig);
       message.reply(`Get All data progress Start. Please wait!`);
+
+
+      console.log(dailyStmnts?.length,'length dailystments')
 
       var interval = setInterval(() => {
         time += 120;
