@@ -667,20 +667,20 @@ var checkCloseBranch = `select b.enm, a.br_no, to_char(a.open_il, 'YYYY/MM/DD') 
                                   checkBatchJobMonday,
                                   checkBatchJobTuesdayFriday,
                                   checkBatchJobFirstDay,
-                                  accrualHaveNormalAccrualBal
-                                  // accrualHaveNplAcrrualBal,
-                                  // nplAcrualAndNormalAccrualBal,
-                                  // nplHaveNormalAccrualOrNonNplHaveNplAccrual,
-                                  // transactionBackdate,
-                                  // closeAccountHavebalance,
-                                  // giroPrkCancelCheck,
-                                  // GlBalanceCheck,
-                                  // GlBalanceVsTrxBal,
-                                  // liabiltyMinusCheck,
-                                  // loanBaseNSwithLoanSch,
-                                  // loanBatchPaymentProcess,
-                                  // otBatchCheck,
-                                  // wrongAmort
+                                  accrualHaveNormalAccrualBal,
+                                  accrualHaveNplAcrrualBal,
+                                  nplAcrualAndNormalAccrualBal,
+                                  nplHaveNormalAccrualOrNonNplHaveNplAccrual,
+                                  transactionBackdate,
+                                  closeAccountHavebalance,
+                                  giroPrkCancelCheck,
+                                  GlBalanceCheck,
+                                  GlBalanceVsTrxBal,
+                                  liabiltyMinusCheck,
+                                  loanBaseNSwithLoanSch,
+                                  loanBatchPaymentProcess,
+                                  otBatchCheck,
+                                  wrongAmort
                                   ]
                           }
    
