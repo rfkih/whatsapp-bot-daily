@@ -123,9 +123,11 @@ const test = async (message, type, number, changeDate) => {
 const testAll = async (message, type, changeDate) => {
     
     const res = [];
+    console.log(type)
+    console.log(changeDate)
 
     const dailyStmnts = date(changeDate, type);
-
+    console.log(dailyStmnts)
    
    
     // console.log(dailyStmnts?.length,'length dailystments')
@@ -147,6 +149,7 @@ const testAll = async (message, type, changeDate) => {
 
 
       console.log(dailyStmnts?.length,'length dailystments')
+      console.log(dailyStmnts)
 
       var interval = setInterval(() => {
         time += 120;
@@ -155,7 +158,7 @@ const testAll = async (message, type, changeDate) => {
       }, 120000);
 
       let i = 0;
-      // console.log(connection);
+
 
       while (i < dailyStmnts.length) {
        
@@ -165,7 +168,7 @@ const testAll = async (message, type, changeDate) => {
 
         result = await connection.execute(dailyStmnts[i]?.query);
 
-        //   console.log(connection);
+
         const response = result.rows;
         const waSend = Table.print(response);
 
@@ -174,7 +177,7 @@ const testAll = async (message, type, changeDate) => {
         } ini sejumlah ${result.rows.length} row`;
 
         if (result.rows.length != 0) {
-        //  console.log(Table.print(response));
+
           res.push(rows);
           res.push(waSend);
         }
@@ -195,6 +198,7 @@ const testAll = async (message, type, changeDate) => {
     console.log(error);
     message.reply("wrong command");
     clearInterval(interval);
+    count = 0;
     connection.release();
   }
 };
