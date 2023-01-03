@@ -174,6 +174,9 @@ const testAll = async (message, type, changeDate) => {
       let result;
       message.reply(`Get All data progress Start. Please wait!`);
 
+
+      console.log(dailyStmnts?.length,'length dailystments')
+
       var interval = setInterval(() => {
         time += 120;
         message.reply(`check in progress. Time elapsed ${time} seconds`);

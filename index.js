@@ -24,6 +24,7 @@ client.on("message", (message) => {
     return
   }
 
+<<<<<<< HEAD
   if(content.length  <= 6 ){
     var type = content.substring(1, 4).toLowerCase();
     // let number = parseInt(content.substring(3, 5)) - 1;
@@ -45,6 +46,9 @@ client.on("message", (message) => {
     return
   }
   //console.log(type, number, changeDate);
+=======
+   
+>>>>>>> 6df627cec9d9d977dee4275d09fb65bb46fd6bd6
 
   if (type === "check" || type === "daily") {
     if (number == "-1") {
