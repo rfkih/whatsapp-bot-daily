@@ -4,8 +4,10 @@ const oracledb = require("oracledb");
 oracledb.outFormat = oracledb.OUT_FORMAT_OBJECT;
 const { Client, LocalAuth, MessageMedia } = require("whatsapp-web.js");
 const Table = require("easy-table");
-
+const moment = require('moment')
 const { date } = require("./data");
+const Excel = require("exceljs")
+
 
 const libPath = "C:\\oracle\\instantclient_21_8";
 const dbConfig = require("../config/dbconfig");
@@ -17,8 +19,8 @@ if (libPath && fs.existsSync(libPath)) {
 let count = 0;
 
 const test = async (message, type, number, changeDate) => {
-  //   date(changeDate)
-
+  //    date(changeDate)
+  const workbook = new Excel.Workbook();
   const dailyStmnts = date(changeDate, type);
 
   const checkStmnts = date(changeDate, type);
@@ -91,7 +93,7 @@ const test = async (message, type, number, changeDate) => {
         } process will be updated every 30 seconds. please wait`
       );
 
-      console.log(dailyStmnts[parseInt(number)]?.query);
+      // console.log(dailyStmnts[parseInt(number)]?.query);
       result = await connection.execute(dailyStmnts[parseInt(number)]?.query);
 
       clearInterval(interval);
@@ -102,15 +104,45 @@ const test = async (message, type, number, changeDate) => {
       //   console.log(connection);
       const response = result.rows;
 
-      const waSend = Table.print(response);
-      const rows = `Data pada ${
-        dailyStmnts[parseInt(number)].name
-      } ini sejumlah ${result.rows.length} row`;
+      if (result.rows.length != 0) {
+        const worksheet = workbook.addWorksheet(`${dailyStmnts[parseInt(number)].name}`);
 
-      console.log(Table.print(response));
+        const newCol = result?.metaData.map((val) => {
+          return{
+            header : val.name,
+            key: val.name,
+            width : val.name.length > 10 ? val.name.toString().length : 10,
+            numFmt: '@'
+          }
+        })
+  
+        console.log(newCol);
+  
+        worksheet.columns = newCol
+  
+        response.map((val) => {
+          worksheet.addRow(val)
+        })
+  
+        // save under export.xlsx
+        await workbook.xlsx.writeFile('Daily Schedule.xlsx');
+  
+        const media = MessageMedia.fromFilePath('./dailySchedule.xlsx');
+        message.reply(media);
 
-      message.reply(waSend);
-      message.reply(rows);
+        }
+
+
+      // const waSend = Table.print(response);
+
+      // const rows = `Data pada ${
+      //   dailyStmnts[parseInt(number)].name
+      // } ini sejumlah ${result.rows.length} row`;
+
+      // console.log(Table.print(response));
+
+      // message.reply(waSend);
+      // message.reply(rows);
     }
   } catch (error) {
     console.log(error);
@@ -121,12 +153,13 @@ const test = async (message, type, number, changeDate) => {
 };
 
 const testAll = async (message, type, changeDate) => {
-    
-    const res = [];
-
+    const dateSch = moment(Date.now()).format('YYYY/MM/DD')
     const dailyStmnts = date(changeDate, type);
+    const res = [];
+    const workbook = new Excel.Workbook();
 
-    // console.log(dailyStmnts?.length,'length dailystments')
+    let summary = `Summary Daily Schedule (${dateSch}) \n`;
+
     count++;
     console.log(count);
     if (count > 1) {
@@ -137,58 +170,69 @@ const testAll = async (message, type, changeDate) => {
     const connection = await oracledb.getConnection(dbConfig);
 
   try {
-  
       let time = 0;
-
       let result;
       message.reply(`Get All data progress Start. Please wait!`);
 
       var interval = setInterval(() => {
         time += 120;
         message.reply(`check in progress. Time elapsed ${time} seconds`);
-
       }, 120000);
 
       let i = 0;
-      // console.log(connection);
 
+      console.log(dailyStmnts.length, "length");
       while (i < dailyStmnts.length) {
-       
-      //  console.log(i)
-      //  console.log(dailyStmnts[i]?.name)
-       message.reply(`${i+1}. ${dailyStmnts[i]?.name}`);
+
+        message.reply(`${i+1}. ${dailyStmnts[i]?.name}`);
 
         result = await connection.execute(dailyStmnts[i]?.query);
 
-        //   console.log(connection);
         const response = result.rows;
         const waSend = Table.print(response);
 
-        const rows = `Data pada ${
-          dailyStmnts[i].name
-        } ini sejumlah ${result.rows.length} row`;
-
         if (result.rows.length != 0) {
-        //  console.log(Table.print(response));
-          res.push(rows);
-          res.push(waSend);
+          //Create new Worksheet
+          const worksheet = workbook.addWorksheet(`${dailyStmnts[parseInt(i)].name}`);
+          const newCol = result?.metaData.map((val) => {
+            return{
+              header : val.name,
+              key: val.name,
+              width : val.name.length > 10 ? val.name.toString().length : 10,
+              numFmt: '@'
+            }
+          })    
+          worksheet.columns = newCol
+
+          response.map((val) => {
+            worksheet.addRow(val)
+          })
+          const rows = `${
+            dailyStmnts[i].name
+          } (${result.rows.length} Rows)`;
+
+          summary += `${rows}\n`
         }
         i++;
       }
-        connection.release();
+      // save under export.xlsx   
+      await workbook.xlsx.writeFile('DailySchedule.xlsx');
+      const media = MessageMedia.fromFilePath('./DailySchedule.xlsx');
+      message.reply(media);
+
+      connection.release();
       clearInterval(interval);
       count = 0;
-
-      console.log(res, 'resnyaa');
-       
-
+    
       res.map((val)=> {
         message.reply(val)
       })
+      message.reply(summary);
    
   } catch (error) {
     console.log(error);
     message.reply("wrong command");
+    count = 0;
     clearInterval(interval);
     connection.release();
   }
