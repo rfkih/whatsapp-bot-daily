@@ -24,7 +24,7 @@ client.on("message", (message) => {
   const number = parseInt(content.substring(5, 7)) - 1;
   let changeDate = content.substring(7, 9);
 
-  //console.log(type, number, changeDate);
+   
 
   if (type === "check" || type === "daily") {
     if (number == "-1") {
