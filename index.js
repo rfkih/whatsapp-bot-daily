@@ -1,6 +1,5 @@
 const qrcode = require("qrcode-terminal");
 const { Client, LocalAuth, MessageMedia } = require("whatsapp-web.js");
-
 const { test, testAll } = require("./src/routers");
 
 const client = new Client({
@@ -19,11 +18,32 @@ let i = 0;
 
 client.on("message", (message) => {
   const content = message.body;
+  console.log(message)
 
-  let type = content.substring(0, 5).toLowerCase();
-  const number = parseInt(content.substring(5, 7)) - 1;
-  let changeDate = content.substring(7, 9);
+  if(content[0] != '!'){
+    return
+  }
 
+  if(content.length  <= 6 ){
+    var type = content.substring(1, 4).toLowerCase();
+    // let number = parseInt(content.substring(3, 5)) - 1;
+    var changeDate = content.substring(4, 6);
+  }else if (content.length  <= 10){
+    var type = content.substring(1, 6).toLowerCase();
+    var number = parseInt(content.substring(6, 8)) - 1;
+    var changeDate = content.substring(8, 10);
+  }else {
+    return;
+  }
+  
+  if(content.toLowerCase() == "list"){
+    var type = content.toLowerCase();
+  }
+
+  if(content.toLowerCase() == "tes123"){
+    message.reply('daily05')
+    return
+  }
   //console.log(type, number, changeDate);
 
   if (type === "check" || type === "daily") {
@@ -34,11 +54,7 @@ client.on("message", (message) => {
     }
   } else if (type === "all" || type === "all-1") {
     console.log('disini')
-
     console.log(content)
-    type = content.substring(0,3)
-    changeDate = content.substring(3, 6)
-
     testAll(message, type, changeDate);
   } else if (type === "list") {
     message.reply(`
