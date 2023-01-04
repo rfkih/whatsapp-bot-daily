@@ -10,7 +10,7 @@ var checkCloseBranch = `select b.enm, a.br_no, to_char(a.open_il, 'YYYY/MM/DD') 
                         order by a.cls_bit desc`;
 
                         var afterCloseBranch = {
-                            name: "AFTER CLOSE - EXPENSE VS BUDGET",
+                            name: "AFTER CLOSE EXPENSE VS BUDGET",
                             query: `SELECT * FROM (
                                   SELECT T1.BUSI_CD,
                                          T1.MNG_BR,
@@ -44,7 +44,7 @@ var checkCloseBranch = `select b.enm, a.br_no, to_char(a.open_il, 'YYYY/MM/DD') 
                           };
                           
                           var closeAccountHavebalance = {
-                            name: "CLOSE ACCOUNT HAVE BALANCE IN TRX_BAL",
+                            name: "CLOSE ACC HAVE BALANCE TRX_BAL",
                             query: `SELECT A.REF_NO, A.MGNT_BR_NO, A.SUBJ_CD, B.ATIT_CD, C.ENM, SUM(B.BAL_AMT)
                           FROM ACOM_CONT_BASE A, AACT_TRX_BAL B, ACOM_COM_ACTCD C
                           WHERE A.REF_NO = B.REF_NO
@@ -350,7 +350,7 @@ var checkCloseBranch = `select b.enm, a.br_no, to_char(a.open_il, 'YYYY/MM/DD') 
                           };
                           
                           var loanBaseNSwithLoanSch = {
-                            name: "Loan Base not Same With Loan Schedule",
+                            name: "Loan Base With Loan Schedule",
                             query: `SELECT *
                               FROM (SELECT T1.*,
                                            T2.PLAN_AMT AS SCH_PLAN_AMT,
@@ -433,7 +433,7 @@ var checkCloseBranch = `select b.enm, a.br_no, to_char(a.open_il, 'YYYY/MM/DD') 
                           };
                           
                           var checkBatchJobMonday = {
-                            name: "Check Batch Job For Every Monday",
+                            name: "Batch Job For Monday",
                             query: `SELECT PROC_DT, BAT_PGM_ID, SEQ_NO, STR_DT, STR_TM, END_DT, END_TM, REG_EMP_NO, 
                           CASE 
                           WHEN PROC_STS = '1' THEN 'ON PROCESSING' 
@@ -453,7 +453,7 @@ var checkCloseBranch = `select b.enm, a.br_no, to_char(a.open_il, 'YYYY/MM/DD') 
                           };
                           
                           var checkBatchJobTuesdayFriday = {
-                            name: "Check Batch Job For Tueday ~ Friday ",
+                            name: "Batch Job Tueday - Friday ",
                             query: `SELECT PROC_DT, BAT_PGM_ID, SEQ_NO, STR_DT, STR_TM, END_DT, END_TM, REG_EMP_NO, 
                               CASE 
                               WHEN PROC_STS = '1' THEN 'ON PROCESSING' 
@@ -473,7 +473,7 @@ var checkCloseBranch = `select b.enm, a.br_no, to_char(a.open_il, 'YYYY/MM/DD') 
                           };
                           
                           var checkBatchJobFirstDay = {
-                            name: "Check Batch Job For 1st Day of the Month ",
+                            name: "Batch Job For 1st Day",
                             query: `select mng_br as branch_no,
                               count(mng_br) as exec_contract,
                               case
@@ -609,7 +609,7 @@ var checkCloseBranch = `select b.enm, a.br_no, to_char(a.open_il, 'YYYY/MM/DD') 
                           };
                           
                           var nplHaveNormalAccrualOrNonNplHaveNplAccrual = {
-                            name: "NPL HAVE NORMAL ACCRUAL OR NON-NPL HAVE NPL ACCRUAL",
+                            name: "NPL HAVE NORMAL ACR OR NON NPL HAVE NPL ACR",
                             query: `SELECT /*+ PARALLEL(A 8)(B 8) (C 8)*/
                               A.REF_NO, C.BAL_AMT, A.DBT_APTC_YN, 'NPL HAVE NORMAL ACCRUAL'
                                FROM ACOM_CONT_BASE A,
@@ -648,7 +648,7 @@ var checkCloseBranch = `select b.enm, a.br_no, to_char(a.open_il, 'YYYY/MM/DD') 
                           };
                           
                           var transactionBackdate = {
-                            name: "TRANSACTION BACKDATED/ BACK VALUE IN LAST 7 DAYS",
+                            name: "TRX BACKDATE IN LAST 7 DAYS",
                             query: `SELECT A.REF_NO, A.HIS_NO, A.TRX_BR, A.UPMU_CD || GEOR_CD AS MENU, TO_CHAR(A.TRX_IL, 'YYYY-MM-DD') AS TRX_IL , TO_CHAR(A.AC_IL, 'YYYY-MM-DD') AS AC_IL , TO_CHAR(A.IB_IL) AS IB_IL , TO_CHAR(A.GIS_IL) AS GIS_IL, A.CAN_IL /*+ PARALLEL(A, 16)*/
                             FROM AACT_TRX_BASE A
                            WHERE A.TRX_IL >= TRUNC(SYSDATE - 7)

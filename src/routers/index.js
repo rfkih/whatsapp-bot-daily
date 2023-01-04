@@ -104,45 +104,45 @@ const test = async (message, type, number, changeDate) => {
       //   console.log(connection);
       const response = result.rows;
 
-      if (result.rows.length != 0) {
-        const worksheet = workbook.addWorksheet(`${dailyStmnts[parseInt(number)].name}`);
+      // if (result.rows.length != 0) {
+      //   const worksheet = workbook.addWorksheet(`${dailyStmnts[parseInt(number)].name}`);
 
-        const newCol = result?.metaData.map((val) => {
-          return{
-            header : val.name,
-            key: val.name,
-            width : val.name.length > 10 ? val.name.toString().length : 10,
-            numFmt: '@'
-          }
-        })
+      //   const newCol = result?.metaData.map((val) => {
+      //     return{
+      //       header : val.name,
+      //       key: val.name,
+      //       width : val.name.length > 10 ? val.name.toString().length : 10,
+      //       numFmt: '@'
+      //     }
+      //   })
   
-        console.log(newCol);
+      //   console.log(newCol);
   
-        worksheet.columns = newCol
+      //   worksheet.columns = newCol
   
-        response.map((val) => {
-          worksheet.addRow(val)
-        })
+      //   response.map((val) => {
+      //     worksheet.addRow(val)
+      //   })
   
-        // save under export.xlsx
-        await workbook.xlsx.writeFile('Daily Schedule.xlsx');
+      //   // save under export.xlsx
+      //   await workbook.xlsx.writeFile('DailyScheduleManual.xlsx');
   
-        const media = MessageMedia.fromFilePath('./dailySchedule.xlsx');
-        message.reply(media);
+      //   const media = MessageMedia.fromFilePath('./DailyScheduleManual.xlsx');
+      //   message.reply(media);
 
-        }
+      //   }
 
 
-      // const waSend = Table.print(response);
+      const waSend = Table.print(response);
 
-      // const rows = `Data pada ${
-      //   dailyStmnts[parseInt(number)].name
-      // } ini sejumlah ${result.rows.length} row`;
+      const rows = `Data pada ${
+        dailyStmnts[parseInt(number)].name
+      } ini sejumlah ${result.rows.length} row`;
 
       // console.log(Table.print(response));
 
-      // message.reply(waSend);
-      // message.reply(rows);
+      message.reply(waSend);
+      message.reply(rows);
     }
   } catch (error) {
     console.log(error);
@@ -178,9 +178,9 @@ const testAll = async (message, type, changeDate) => {
       console.log(dailyStmnts?.length,'length dailystments')
 
       var interval = setInterval(() => {
-        time += 120;
+        time += 300;
         message.reply(`check in progress. Time elapsed ${time} seconds`);
-      }, 120000);
+      }, 300000);
 
       let i = 0;
 
@@ -201,7 +201,7 @@ const testAll = async (message, type, changeDate) => {
             return{
               header : val.name,
               key: val.name,
-              width : val.name.length > 10 ? val.name.toString().length : 10,
+              width : val.name.length > 10 ? val.name.toString().length : 15,
               numFmt: '@'
             }
           })    

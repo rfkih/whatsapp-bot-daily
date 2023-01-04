@@ -18,7 +18,6 @@ let i = 0;
 
 client.on("message", (message) => {
   const content = message.body;
-  console.log(message)
 
   if(content[0] != '!'){
     return
@@ -35,9 +34,9 @@ client.on("message", (message) => {
   }else {
     return;
   }
-  
-  if(content.toLowerCase() == "list"){
-    var type = content.toLowerCase();
+  console.log(content.substring(1,4).toLowerCase());
+  if(content.substring(1,5).toLowerCase() == "list"){
+    var type = content.substring(1,5).toLowerCase();
   }
 
   if(content.toLowerCase() == "tes123"){
