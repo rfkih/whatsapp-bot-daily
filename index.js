@@ -42,10 +42,10 @@ client.on("message", (message) => {
     return;
   }
   console.log(content.substring(1,4).toLowerCase());
+
   if(content.substring(1,5).toLowerCase() == "list"){
     var type = content.substring(1,5).toLowerCase();
   }
-
  
   //console.log(type, number, changeDate);
 

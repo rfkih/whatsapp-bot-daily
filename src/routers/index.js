@@ -125,9 +125,9 @@ const test = async (message, type, number, changeDate) => {
       //   })
   
       //   // save under export.xlsx
-      //   await workbook.xlsx.writeFile('DailyScheduleManual.xlsx');
+      //   await workbook.xlsx.writeFile('Daily Schedule.xlsx');
   
-      //   const media = MessageMedia.fromFilePath('./DailyScheduleManual.xlsx');
+      //   const media = MessageMedia.fromFilePath('./dailySchedule.xlsx');
       //   message.reply(media);
 
       //   }
@@ -139,7 +139,7 @@ const test = async (message, type, number, changeDate) => {
         dailyStmnts[parseInt(number)].name
       } ini sejumlah ${result.rows.length} row`;
 
-      // console.log(Table.print(response));
+      console.log(Table.print(response));
 
       message.reply(waSend);
       message.reply(rows);
@@ -153,16 +153,13 @@ const test = async (message, type, number, changeDate) => {
 };
 
 const testAll = async (message, type, changeDate) => {
-    
-    const res = [];
-    console.log(type)
-    console.log(changeDate)
-
+    const dateSch = moment(Date.now()).format('YYYY/MM/DD')
     const dailyStmnts = date(changeDate, type);
-    console.log(dailyStmnts)
-   
-   
-    // console.log(dailyStmnts?.length,'length dailystments')
+    const res = [];
+    const workbook = new Excel.Workbook();
+
+    let summary = `Summary Daily Schedule (${dateSch}) \n`;
+
     count++;
     console.log(count);
     if (count > 1) {
@@ -179,12 +176,11 @@ const testAll = async (message, type, changeDate) => {
 
 
       console.log(dailyStmnts?.length,'length dailystments')
-      console.log(dailyStmnts)
 
       var interval = setInterval(() => {
-        time += 300;
+        time += 120;
         message.reply(`check in progress. Time elapsed ${time} seconds`);
-      }, 300000);
+      }, 120000);
 
       let i = 0;
 
@@ -205,7 +201,7 @@ const testAll = async (message, type, changeDate) => {
             return{
               header : val.name,
               key: val.name,
-              width : val.name.length > 10 ? val.name.toString().length : 15,
+              width : val.name.length > 10 ? val.name.toString().length : 10,
               numFmt: '@'
             }
           })    
@@ -214,8 +210,7 @@ const testAll = async (message, type, changeDate) => {
           response.map((val) => {
             worksheet.addRow(val)
           })
-          const rows = `
-          ${
+          const rows = `${
             dailyStmnts[i].name
           } (${result.rows.length} Rows)`;
 
@@ -242,7 +237,6 @@ const testAll = async (message, type, changeDate) => {
     message.reply("wrong command");
     count = 0;
     clearInterval(interval);
-    count = 0;
     connection.release();
   }
 };
