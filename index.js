@@ -19,6 +19,13 @@ let i = 0;
 client.on("message", (message) => {
   const content = message.body;
 
+  const tesMsg = content.split(" ")
+
+  if(tesMsg[0] == "tes"){
+    message.reply(tesMsg[1])
+    return
+  }
+
   if(content[0] != '!'){
     return
   }
@@ -39,10 +46,7 @@ client.on("message", (message) => {
     var type = content.substring(1,5).toLowerCase();
   }
 
-  if(content.toLowerCase() == "tes123"){
-    message.reply('daily05')
-    return
-  }
+ 
   //console.log(type, number, changeDate);
 
   if (type === "check" || type === "daily") {
