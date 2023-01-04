@@ -25,14 +25,11 @@
 let star = ``;
 
 for (let i = 0; i < 8; i++) {
-    for (let k = 8; k > i ; k--) {
+    for (let k = 8; k >= i ; k--) {
       star += ` `
-      // for (let l = 0; l < k; l++) {
-      //   star += '*';
-      // }
-      for (let j = 0; j < i; j++) {
-        star += `*`
-      }
+    }
+    for (let j = 0; j < i; j++) {
+      star += `*`
     }
   star += `\n`
 }

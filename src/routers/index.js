@@ -199,9 +199,27 @@ const testAll = async (message, type, changeDate) => {
         const waSend = Table.print(response);
 
         if (result.rows.length != 0) {
+          //Create new Worksheet
+          const worksheet = workbook.addWorksheet(`${dailyStmnts[parseInt(i)].name}`);
+          const newCol = result?.metaData.map((val) => {
+            return{
+              header : val.name,
+              key: val.name,
+              width : val.name.length > 10 ? val.name.toString().length : 15,
+              numFmt: '@'
+            }
+          })    
+          worksheet.columns = newCol
 
-          res.push(rows);
-          res.push(waSend);
+          response.map((val) => {
+            worksheet.addRow(val)
+          })
+          const rows = `
+          ${
+            dailyStmnts[i].name
+          } (${result.rows.length} Rows)`;
+
+          summary += `${rows}\n`
         }
         i++;
       }
