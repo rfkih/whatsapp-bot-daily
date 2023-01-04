@@ -153,7 +153,6 @@ const test = async (message, type, number, changeDate) => {
 };
 
 const testAll = async (message, type, changeDate) => {
-<<<<<<< HEAD
     
     const res = [];
     console.log(type)
@@ -164,15 +163,6 @@ const testAll = async (message, type, changeDate) => {
    
    
     // console.log(dailyStmnts?.length,'length dailystments')
-=======
-    const dateSch = moment(Date.now()).format('YYYY/MM/DD')
-    const dailyStmnts = date(changeDate, type);
-    const res = [];
-    const workbook = new Excel.Workbook();
-
-    let summary = `Summary Daily Schedule (${dateSch}) \n`;
-
->>>>>>> 215bcb7844aaa0567218090bed7655de4e117564
     count++;
     console.log(count);
     if (count > 1) {
@@ -197,10 +187,6 @@ const testAll = async (message, type, changeDate) => {
       }, 300000);
 
       let i = 0;
-<<<<<<< HEAD
-
-=======
->>>>>>> 215bcb7844aaa0567218090bed7655de4e117564
 
       console.log(dailyStmnts.length, "length");
       while (i < dailyStmnts.length) {
@@ -209,40 +195,13 @@ const testAll = async (message, type, changeDate) => {
 
         result = await connection.execute(dailyStmnts[i]?.query);
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 215bcb7844aaa0567218090bed7655de4e117564
         const response = result.rows;
         const waSend = Table.print(response);
 
         if (result.rows.length != 0) {
-<<<<<<< HEAD
 
           res.push(rows);
           res.push(waSend);
-=======
-          //Create new Worksheet
-          const worksheet = workbook.addWorksheet(`${dailyStmnts[parseInt(i)].name}`);
-          const newCol = result?.metaData.map((val) => {
-            return{
-              header : val.name,
-              key: val.name,
-              width : val.name.length > 10 ? val.name.toString().length : 15,
-              numFmt: '@'
-            }
-          })    
-          worksheet.columns = newCol
-
-          response.map((val) => {
-            worksheet.addRow(val)
-          })
-          const rows = `${
-            dailyStmnts[i].name
-          } (${result.rows.length} Rows)`;
-
-          summary += `${rows}\n`
->>>>>>> 215bcb7844aaa0567218090bed7655de4e117564
         }
         i++;
       }
