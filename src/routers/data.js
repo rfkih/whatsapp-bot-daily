@@ -1,6 +1,11 @@
 // var changeDate = "";
+const e = require('express');
+const moment = require('moment')
+
 
 const date = (changeDate, type ) => {
+const dateSch = moment(Date.now()).format('dddd DD').split(" ")
+let arrDaily;
 var bfCount = `select count(1) as count from aact_trx_actlog_bf where trx_il = trunc(sysdate) ${changeDate}`;
 
 var checkCloseBranch = `select b.enm, a.br_no, to_char(a.open_il, 'YYYY/MM/DD') as open_il , a.bon_clsgb, a.CLS_BIT
@@ -126,145 +131,150 @@ var checkCloseBranch = `select b.enm, a.br_no, to_char(a.open_il, 'YYYY/MM/DD') 
                           
                           var GlBalanceCheck = {
                             name: "GL Balance Check",
-                            query: `SELECT *
-                              FROM (SELECT 'BS' AS GBBBBBBBBBB,
-                                              TR_IL,
-                                           --TO_CHAR(TR_IL, 'YYYY/MM/DD'),
-                                           BR_NO,
-                                           SUM(DR) AS DR,
-                                           SUM(CR) AS CR,
-                                           SUM(DR) - SUM(CR) AS DIFFFFFFFFFF
-                                      FROM (SELECT TR_IL ,
-                                                   BR_NO,
-                                                   CASE
-                                                     WHEN SUBSTR(AC_CD, 1, 1) = '1' THEN
-                                                      AF_FJAN
-                                                     ELSE
-                                                      0
-                                                   END AS DR,
-                                                   CASE
-                                                     WHEN SUBSTR(AC_CD, 1, 1) IN ('2', '3') THEN
-                                                      AF_FJAN
-                                                     ELSE
-                                                      0
-                                                   END AS CR
-                                              FROM AACT_ACT_DATE
-                                             WHERE TR_IL = trunc(sysdate) ${changeDate}
-                                               AND SUBSTR(AC_CD, 1, 1) IN ('1', '2', '3'))
-                                     GROUP BY TR_IL, BR_NO
-                                    UNION ALL
-                                    SELECT 'PL' AS GB,
-                                           TR_IL,
-                                           BR_NO,
-                                           SUM(DR),
-                                           SUM(CR),
-                                           (SUM(DR) - SUM(CR)) + SUM(DIFF)
-                                      FROM (SELECT TR_IL,
-                                                   BR_NO,
-                                                   CASE
-                                                     WHEN SUBSTR(AC_CD, 1, 1) IN ('5') THEN
-                                                      AF_FJAN --?? / DR
-                                                     ELSE
-                                                      0
-                                                   END AS DR,
-                                                   CASE
-                                                     WHEN SUBSTR(AC_CD, 1, 1) IN ('4') THEN
-                                                      AF_FJAN --?? / ?? / CR
-                                                     ELSE
-                                                      0
-                                                   END AS CR,
-                                                   CASE
-                                                     WHEN AC_CD = '33101001' THEN
-                                                      AF_FJAN
-                                                     ELSE
-                                                      0
-                                                   END AS DIFF
-                                              FROM AACT_ACT_DATE
-                                             WHERE TR_IL = trunc(sysdate) ${changeDate})
-                                     GROUP BY TR_IL, BR_NO
-                                    UNION ALL
-                                    SELECT 'BS/PL' AS GB,
-                                           TR_IL,
-                                           BR_NO,
-                                           SUM(DR),
-                                           SUM(CR),
-                                           SUM(DR) - SUM(CR)
-                                      FROM (SELECT TR_IL,
-                                                   BR_NO,
-                                                   CASE
-                                                     WHEN SUBSTR(AC_CD, 1, 1) IN ('1', '5') THEN
-                                                      AF_FJAN --?? / DR
-                                                     ELSE
-                                                      0
-                                                   END AS DR,
-                                                   CASE
-                                                     WHEN SUBSTR(AC_CD, 1, 1) IN ('2', '3', '4') THEN
-                                                      AF_FJAN --?? / ?? / CR
-                                                     ELSE
-                                                      0
-                                                   END AS CR
-                                              FROM AACT_ACT_DATE
-                                             WHERE TR_IL = trunc(sysdate) ${changeDate}
-                                               AND AC_CD != '33101001')
-                                     GROUP BY TR_IL, BR_NO)
-                            --ORDER BY GB, TR_IL, BR_NO 
-                            UNION ALL
-                            --RCH_BAL 
-                            SELECT 'AFEX_RCH_BAL',
-                                   T1.TR_IL,
-                                   T1.CD,
-                                   T1.SHW_OPBS - NVL(T2.AMT, 0),
-                                   T1.SHW_CLBS,
-                                   (T1.SHW_OPBS - NVL(T2.AMT, 0)) - T1.SHW_CLBS AS DIFF
-                              FROM AFEX_RCH_BAL T1
-                              LEFT OUTER JOIN (SELECT CD,
-                                                      SUM(CASE
-                                                            WHEN DRCR_GB = 'D' THEN
-                                                             DRCR_AMT * -1
-                                                            WHEN DRCR_GB = 'C' THEN
-                                                             DRCR_AMT
-                                                          END) AS AMT
-                                                 FROM AFEX_RCH_PEND
-                                                WHERE TR_IL = trunc(sysdate) ${changeDate}
-                                                  AND SA_GB = 'S'
-                                                GROUP BY CD) T2
-                                ON T1.CD = T2.CD
-                             WHERE T1.TR_IL = trunc(sysdate) ${changeDate}
-                            --   AND T1.CD < 2011
-                            UNION ALL
-                            --28911001
-                            --WASH
-                            SELECT 'WASH',
-                                   A.TR_IL,
-                                   A.BR_NO,
-                                   NVL(SUM(DECODE(B.BLDRCR_GB, 'D', A.AF_FJAN, 0)), 0) AS drFamt,
-                                   NVL(SUM(DECODE(B.BLDRCR_GB, 'C', A.AF_FJAN, 0)), 0) AS crFamt,
-                                   NVL(SUM(DECODE(B.BLDRCR_GB, 'D', A.AF_FJAN, -A.AF_FJAN)), 0) AS fdiff
-                              FROM AACT_ACT_DATE A, ACOM_COM_ACTCD B
-                             WHERE A.BSPL_GB = 'B'
-                               AND A.TR_IL = trunc(sysdate) ${changeDate}
-                               AND A.BSPL_GB = B.BSPL_GB
-                               AND A.AC_CD = B.AC_CD
-                               AND A.AC_CD = '28911001'
-                               AND B.BR_NO = '0000'
-                               AND B.AC_KD NOT IN ('6', '7', '8', '9')
-                             GROUP BY A.BR_NO, A.TR_IL
-                            UNION ALL
-                            --ATMCASH
-                            SELECT 'ATMCASH', A.*, A.ATM_DT_BAL - A.ACT_DT_BAL AS DIFF
-                              FROM (SELECT A.TR_DT,
-                                           A.BR_NO,
-                                           SUM(A.AF_BAL) AS ATM_DT_BAL,
-                                           B.AF_FJAN AS ACT_DT_BAL
-                                      FROM AACT_ATM_DATE A
-                                     INNER JOIN AACT_ACT_DATE B
-                                        ON A.AC_CD = B.AC_CD
-                                       AND A.BR_NO = B.BR_NO
-                                       AND A.TR_DT = B.TR_IL
-                                     WHERE 1 = 1
-                                     GROUP BY A.TR_DT, A.BR_NO, B.AF_FJAN) A
-                             WHERE A.TR_DT = trunc(sysdate) ${changeDate}
-                             `,
+                            query: `SELECT  X.*
+                            FROM    (
+                                        -- BS & PL Balance
+                                        ------------------
+                                        SELECT  *
+                                        FROM    (
+                                                    SELECT  'BS'                              AS GB
+                                                            ,TR_IL                            
+                                                            ,BR_NO                            
+                                                            ,SUM(DR)                          AS DR
+                                                            ,SUM(CR)                          AS CR
+                                                            ,SUM(DR) - SUM(CR)                AS DIFFERENCE_AMT
+                                                    FROM    (
+                                                                SELECT  TR_IL
+                                                                        ,BR_NO
+                                                                        ,CASE
+                                                                           WHEN SUBSTR(AC_CD, 1, 1) = '1' THEN AF_FJAN
+                                                                           ELSE 0
+                                                                         END               AS DR
+                                                                        ,CASE
+                                                                           WHEN SUBSTR(AC_CD, 1, 1) IN ('2', '3') THEN AF_FJAN
+                                                                           ELSE 0
+                                                                         END               AS CR
+                                                                FROM    AACT_ACT_DATE
+                                                                WHERE   TR_IL = TRUNC(SYSDATE) ${changeDate}
+                                                                AND     SUBSTR(AC_CD, 1, 1) IN ('1', '2', '3')
+                                                            )
+                                                    GROUP   BY TR_IL, BR_NO
+                                                    UNION   ALL
+                                                    SELECT  'PL'                AS GB
+                                                            ,TR_IL
+                                                            ,BR_NO
+                                                            ,SUM(DR)
+                                                            ,SUM(CR)
+                                                            ,(SUM(DR) - SUM(CR)) + SUM(DIFF)  AS DIFFERENCE_AMT
+                                                    FROM    (
+                                                                SELECT  TR_IL
+                                                                        ,BR_NO
+                                                                        ,CASE
+                                                                           WHEN SUBSTR(AC_CD, 1, 1) IN ('5') THEN AF_FJAN --?? / DR
+                                                                           ELSE 0
+                                                                         END    AS DR
+                                                                        ,CASE
+                                                                           WHEN SUBSTR(AC_CD, 1, 1) IN ('4') THEN AF_FJAN --?? / ?? / CR
+                                                                           ELSE 0
+                                                                         END    AS CR
+                                                                        ,CASE
+                                                                           WHEN AC_CD = '33101001' THEN AF_FJAN
+                                                                           ELSE 0
+                                                                         END    AS DIFF
+                                                                FROM    AACT_ACT_DATE
+                                                                WHERE   TR_IL = TRUNC(SYSDATE) ${changeDate}
+                                                            )
+                                                    GROUP   BY TR_IL, BR_NO
+                                                    UNION   ALL
+                                                    SELECT  'BS/PL' AS GB
+                                                            ,TR_IL
+                                                            ,BR_NO
+                                                            ,SUM(DR)
+                                                            ,SUM(CR)
+                                                            ,SUM(DR) - SUM(CR)               AS DIFFERENCE_AMT
+                                                    FROM    (
+                                                                SELECT  TR_IL
+                                                                        ,BR_NO
+                                                                        ,CASE
+                                                                           WHEN SUBSTR(AC_CD, 1, 1) IN ('1', '5') THEN AF_FJAN --?? / DR
+                                                                           ELSE 0
+                                                                         END         AS DR
+                                                                        ,CASE
+                                                                           WHEN SUBSTR(AC_CD, 1, 1) IN ('2', '3', '4') THEN AF_FJAN --?? / ?? / CR
+                                                                           ELSE 0
+                                                                         END         AS CR
+                                                                FROM    AACT_ACT_DATE
+                                                                WHERE   TR_IL  = TRUNC(SYSDATE) ${changeDate}
+                                                                AND     AC_CD != '33101001'
+                                                            )
+                                                    GROUP   BY TR_IL, BR_NO
+                                                )
+                                        --ORDER BY GB, TR_IL, BR_NO 
+                                        UNION   ALL
+                                        -- Reconcile Balance
+                                        --------------------
+                                        SELECT  'AFEX_RCH_BAL'
+                                                ,T1.TR_IL
+                                                ,T1.CD
+                                                ,T1.SHW_OPBS - NVL(T2.AMT, 0)
+                                                ,T1.SHW_CLBS
+                                                ,(T1.SHW_OPBS - NVL(T2.AMT, 0)) - T1.SHW_CLBS AS DIFFERENCE_AMT
+                                        FROM    AFEX_RCH_BAL T1
+                                        LEFT    OUTER JOIN (
+                                                               SELECT  CD
+                                                                       ,SUM(
+                                                                               CASE
+                                                                                WHEN DRCR_GB = 'D' THEN DRCR_AMT * -1
+                                                                                WHEN DRCR_GB = 'C' THEN DRCR_AMT
+                                                                               END
+                                                                           )                  AS AMT
+                                                               FROM    AFEX_RCH_PEND
+                                                               WHERE   TR_IL = TRUNC(SYSDATE) ${changeDate}
+                                                               AND     SA_GB = 'S'
+                                                               GROUP   BY CD
+                                                           ) T2 ON T1.CD = T2.CD
+                                        WHERE   T1.TR_IL = TRUNC(SYSDATE) ${changeDate}
+                                        --AND     T1.CD   < 2011
+                                        UNION   ALL
+                                        -- Wash (28911001) & CCA (28911002)
+                                        -----------------------------------
+                                        SELECT  'WASH'
+                                                ,A.TR_IL
+                                                ,A.BR_NO
+                                                ,NVL(SUM(DECODE(B.BLDRCR_GB, 'D', A.AF_FJAN, 0)), 0) AS DR
+                                                ,NVL(SUM(DECODE(B.BLDRCR_GB, 'C', A.AF_FJAN, 0)), 0) AS CR
+                                                ,NVL(SUM(DECODE(B.BLDRCR_GB, 'D', A.AF_FJAN, -A.AF_FJAN)), 0) AS DIFFERENCE_AMT
+                                        FROM    AACT_ACT_DATE    A
+                                                , ACOM_COM_ACTCD B
+                                        WHERE   A.BSPL_GB = 'B'
+                                        AND     A.TR_IL   = TRUNC(SYSDATE) ${changeDate}
+                                        AND     A.BSPL_GB = B.BSPL_GB
+                                        AND     A.AC_CD   = B.AC_CD
+                                        AND     A.AC_CD   IN ('28911001', '28911002')
+                                        AND     B.BR_NO   = '0000'
+                                        AND     B.AC_KD NOT IN ('6', '7', '8', '9')
+                                        GROUP   BY A.BR_NO, A.TR_IL
+                                        UNION   ALL
+                                        -- ATM Cash (10104001)
+                                        ----------------------
+                                        SELECT  'ATM Cash'
+                                                , A.*
+                                                , A.ATM_DT_BAL - A.ACT_DT_BAL  AS DIFFERENCE_AMT
+                                        FROM    (
+                                                    SELECT  A.TR_DT
+                                                            ,A.BR_NO
+                                                            ,SUM(A.AF_BAL)     AS ATM_DT_BAL
+                                                            ,B.AF_FJAN         AS ACT_DT_BAL
+                                                    FROM    AACT_ATM_DATE      A
+                                                    INNER   JOIN AACT_ACT_DATE B ON A.AC_CD = B.AC_CD
+                                                    AND     A.BR_NO = B.BR_NO
+                                                    AND     A.TR_DT = B.TR_IL
+                                                    WHERE   1       = 1
+                                                    GROUP   BY A.TR_DT, A.BR_NO, B.AF_FJAN
+                                                ) A
+                                        WHERE   A.TR_DT = TRUNC(SYSDATE) ${changeDate}
+                                  )   X
+                            WHERE   X.DIFFERENCE_AMT <> 0`,
                           };
                           
                           var GlBalanceVsTrxBal = {
@@ -657,35 +667,39 @@ var checkCloseBranch = `select b.enm, a.br_no, to_char(a.open_il, 'YYYY/MM/DD') 
                                  (A.AC_IL <> A.IB_IL OR A.AC_IL <> A.GIS_IL OR A.AC_IL < A.CAN_IL))`,
                           };
 
-                          var checkDwi = ` select cd, remark from acom_reh_his where base_dt = trunc(sysdate) ${changeDate} and cd = 'CM603'`;
+                          var checkDwi = `select cd, remark from acom_reh_his where base_dt = trunc(sysdate) ${changeDate} and cd = 'CM603'`;
 
                           if (type === "check") {
                             return [bfCount, checkCloseBranch, checkDwi]
                           }else if (type === "daily" || type === "all") {
-                            return [ afterCloseBranch,
-                                  allocationCollateral,
-                                  checkBatchJobMonday,
-                                  checkBatchJobTuesdayFriday,
-                                  checkBatchJobFirstDay,
-                                  accrualHaveNormalAccrualBal,
-                                  accrualHaveNplAcrrualBal,
-                                  nplAcrualAndNormalAccrualBal,
-                                  nplHaveNormalAccrualOrNonNplHaveNplAccrual,
-                                  transactionBackdate,
-                                  closeAccountHavebalance,
-                                  giroPrkCancelCheck,
-                                  GlBalanceCheck,
-                                  GlBalanceVsTrxBal,
-                                  liabiltyMinusCheck,
-                                  loanBaseNSwithLoanSch,
-                                  loanBatchPaymentProcess,
-                                  otBatchCheck,
-                                  wrongAmort
-                                  ]
+                            
+                            arrDaily = [afterCloseBranch,
+                              allocationCollateral,
+                              accrualHaveNormalAccrualBal,
+                              accrualHaveNplAcrrualBal,
+                              nplAcrualAndNormalAccrualBal,
+                              nplHaveNormalAccrualOrNonNplHaveNplAccrual,
+                              transactionBackdate,
+                              closeAccountHavebalance,
+                              giroPrkCancelCheck,
+                              GlBalanceCheck,
+                              GlBalanceVsTrxBal,
+                              liabiltyMinusCheck,
+                              loanBaseNSwithLoanSch,
+                              loanBatchPaymentProcess,
+                              otBatchCheck,
+                              wrongAmort
+                            ]
+
+                            if(dateSch[1] == "01"){
+                              arrDaily.push(checkBatchJobFirstDay)
+                            }else if(dateSch[0] == "Monday"){
+                              arrDaily.push(checkBatchJobMonday)
+                            }else{
+                              arrDaily.push(checkBatchJobTuesdayFriday)
+                            }
+                            return arrDaily;
                           }
-   
- 
-  
 };
 
 

@@ -17,14 +17,14 @@ client.on("ready", () => {
 let i = 0;
 
 client.on("message", (message) => {
-  const content = message.body;
+  // console.log(message);
+  const sender = message.author.split("@");
 
-  const tesMsg = content.split(" ")
-
-  if(tesMsg[0] == "tes"){
-    message.reply(tesMsg[1])
-    return
+  if(sender[0] !== "6281278785508")
+  {
+    return;
   }
+  const content = message.body;
 
   if(content[0] != '!'){
     return
@@ -41,13 +41,12 @@ client.on("message", (message) => {
   }else {
     return;
   }
-  console.log(content.substring(1,4).toLowerCase());
 
   if(content.substring(1,5).toLowerCase() == "list"){
     var type = content.substring(1,5).toLowerCase();
   }
  
-  //console.log(type, number, changeDate);
+  // console.log(type, number, changeDate);
 
   if (type === "check" || type === "daily") {
     if (number == "-1") {
@@ -56,37 +55,35 @@ client.on("message", (message) => {
       test(message, type, number, changeDate);
     }
   } else if (type === "all" || type === "all-1") {
-    console.log('disini')
-    console.log(content)
+    // console.log('disini')
+    // console.log(content)
     testAll(message, type, changeDate);
   } else if (type === "list") {
     message.reply(`
 Command List :
-Check Branch / BF_Count : Format "check(number)"
+Check Branch / BF_Count : Format "!check(number)"
 1. BF_Count
 2. Open/Close Branch
-3. Check Dwi
+3. Check CM603
 
-Daily Schedule: Format "daily(number)"
+Daily Schedule: Format "!daily(number)"
 1. After Close Branch
-2. Cllocation Collateral
-3. Check Batch Job Monday
-4. Check Batch Job Tuesday Friday
-5. Check Batch Job First Day
-6. Accrual Have Normal Accrual Bal
-7. Accrual Have Npl Acrrual Bal
-8. Npl Acrual And Normal AccrualBal
-9. Npl Have Normal Accrual Or Non Npl Have Npl Accrual
-10. Transaction Backdate
-11. Close Account Have balance
-12. Giro Prk Cancel Check
-13. Gl Balance Check
-14. Gl Balance Vs TrxBal
-15. Liabilty Minus Check
-16. Loan Base NS with Loan Sch
-17. Loan Batch Payment Process
-18. Ot Batch Check
-19. Wrong Amort`);
+2. Allocation Collateral
+3. Accrual Have Normal Accrual Bal
+4. Accrual Have Npl Acrrual Bal
+5. Npl Acrual And Normal AccrualBal
+6. Npl Have Normal Accrual Or Non Npl Have Npl Accrual
+7. Transaction Backdate
+8. Close Account Have balance
+9. Giro Prk Cancel Check
+10. Gl Balance Check
+11. Gl Balance Vs TrxBal
+12. Liabilty Minus Check
+13. Loan Base NS with Loan Sch
+14. Loan Batch Payment Process
+15. Ot Batch Check
+16. Wrong Amort
+17. Check Batch Job`);
   }
 });
 

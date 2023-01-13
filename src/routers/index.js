@@ -75,17 +75,16 @@ const test = async (message, type, number, changeDate) => {
       }
     } else if (type === "daily") {
       let time = 0;
-
       let result;
 
       var interval = setInterval(() => {
-        time += 30;
-        message.reply(`check in progress. Time elapsed ${time} seconds`);
+        time += 1;
+        message.reply(`check in progress. Time elapsed ${time} minutes`);
 
         if (time == 120) {
           message.reply("sabar ya");
         }
-      }, 30000);
+      }, 60000);
 
       message.reply(
         `Table selected : ${
@@ -93,7 +92,7 @@ const test = async (message, type, number, changeDate) => {
         } process will be updated every 30 seconds. please wait`
       );
 
-      // console.log(dailyStmnts[parseInt(number)]?.query);
+      console.log(dailyStmnts[parseInt(number)]?.query);
       result = await connection.execute(dailyStmnts[parseInt(number)]?.query);
 
       clearInterval(interval);
@@ -161,7 +160,7 @@ const testAll = async (message, type, changeDate) => {
     let summary = `Summary Daily Schedule (${dateSch}) \n`;
 
     count++;
-    console.log(count);
+    // console.log(count);
     if (count > 1) {
       message.reply("Sorry, this command is already Running. Please wait for previous command to finish")
       return;
@@ -171,20 +170,19 @@ const testAll = async (message, type, changeDate) => {
 
   try {
       let time = 0;
+      let cnt = 0;
       let result;
       message.reply(`Get All data progress Start. Please wait!`);
 
 
-      console.log(dailyStmnts?.length,'length dailystments')
 
       var interval = setInterval(() => {
-        time += 120;
-        message.reply(`check in progress. Time elapsed ${time} seconds`);
-      }, 120000);
+        time += 5;
+        message.reply(`check in progress. Time elapsed ${time} minutes`);
+      }, 300000);
 
       let i = 0;
 
-      console.log(dailyStmnts.length, "length");
       while (i < dailyStmnts.length) {
 
         message.reply(`${i+1}. ${dailyStmnts[i]?.name}`);
@@ -196,6 +194,7 @@ const testAll = async (message, type, changeDate) => {
 
         if (result.rows.length != 0) {
           //Create new Worksheet
+          cnt ++;
           const worksheet = workbook.addWorksheet(`${dailyStmnts[parseInt(i)].name}`);
           const newCol = result?.metaData.map((val) => {
             return{
@@ -210,7 +209,7 @@ const testAll = async (message, type, changeDate) => {
           response.map((val) => {
             worksheet.addRow(val)
           })
-          const rows = `${
+          const rows = `${cnt}. ${
             dailyStmnts[i].name
           } (${result.rows.length} Rows)`;
 
@@ -226,7 +225,8 @@ const testAll = async (message, type, changeDate) => {
       connection.release();
       clearInterval(interval);
       count = 0;
-    
+    //  console.log("count",count);
+
       res.map((val)=> {
         message.reply(val)
       })
